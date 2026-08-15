@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "intelligence",
+  "name": "INTELLIGENCE",
+  "commands": {
+    "validate": "npm run validar",
+    "smoke": "npm run test:intelligence"
+  },
+  "runtime": {
+    "preferred": "host",
+    "fallback": "host"
+  },
+  "sonar": {
+    "projectKey": "AnaPLysyk_INTELLIGENCE",
+    "organization": "anaplysyk",
+    "propertiesFile": "sonar-project.properties"
+  }
+}

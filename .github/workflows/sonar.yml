@@ -1,0 +1,63 @@
+name: SonarCloud - INTELLIGENCE
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout do proprio projeto
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci --ignore-scripts
+
+      - name: Validar TypeScript
+        run: npm run typecheck --if-present
+
+      - name: Exigir token Sonar deste repositorio
+        shell: bash
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::Configure SONAR_TOKEN nos secrets deste repositorio."
+            exit 1
+          fi
+
+      - name: Analisar somente este repositorio
+        shell: bash
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_SCANNER_VERSION: 7.2.0.5079
+        run: |
+          set -euo pipefail
+          scanner_dir="${RUNNER_TEMP}/sonar-scanner"
+          archive="sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip"
+          mkdir -p "${scanner_dir}"
+          curl --fail --silent --show-error --location \\
+            --proto '=https' --proto-redir '=https' \\
+            "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/${archive}" \\
+            --output "${scanner_dir}/${archive}"
+          unzip -q "${scanner_dir}/${archive}" -d "${scanner_dir}"
+          "${scanner_dir}/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner" \\
+            -Dsonar.qualitygate.wait=true \\
+            -Dsonar.qualitygate.timeout=300
