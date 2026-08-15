@@ -14,6 +14,21 @@
     "preferred": "host",
     "fallback": "host"
   },
+  "preflight": {
+    "vpn": {
+      "required": true,
+      "autoEnsure": true
+    },
+    "tcp": [
+      {
+        "name": "SMART_DB",
+        "hostEnv": "SMART_DB_HOST",
+        "portEnv": "SMART_DB_PORT",
+        "defaultPort": 3306,
+        "timeoutMs": 3000
+      }
+    ]
+  },
   "sonar": {
     "projectKey": "AnaPLysyk_INTELLIGENCE",
     "organization": "anaplysyk",
