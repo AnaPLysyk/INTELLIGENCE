@@ -4,8 +4,12 @@
   "name": "INTELLIGENCE",
   "commands": {
     "validate": "npm run validar",
-    "smoke": "npm run test:intelligence"
+    "smoke": "npm run test:smoke",
+    "regression": "npm run test:regression",
+    "release": "npm run test:release",
+    "scheduled": "npm run test:scheduled"
   },
+  "plan": "automation.plan.json",
   "runtime": {
     "preferred": "host",
     "fallback": "host"

@@ -1,67 +1,65 @@
 # INTELLIGENCE — automação Playwright
 
-Automação independente da UI do Intelligence. Os cenários atuais cobrem o ticket `INT-100`,
-com testes de UI e dos contratos HTTP do mecanismo de busca.
+Automação de smoke, regressão e release do GBS Intelligence. O projeto usa SMART, banco e GBDS
+somente para descobrir massa real; nenhuma dessas fontes é alterada.
 
-## Plano de testes
+## Estrutura
 
-O [plano desta fase](PLANO_DE_TESTES.md) cobre a única Tela de Busca e separa claramente os
-cenários positivos e negativos de UI e API, a conferência no banco e o gerador de massa para cada
-tipo disponível no seletor.
+```text
+tests/api/intelligence/ cenários positivos e negativos de API
+tests/ui/intelligence/  cenários positivos e negativos de UI
+tests/bd/intelligence/  integridade da fonte e bloqueio de comandos destrutivos
+support/functions/api/  clientes HTTP e fluxos de autorização
+support/functions/ui/   Page Objects com ações e validações visuais
+support/functions/bd/   consultas somente leitura
+support/functions/provisionamento/ fluxos de preparação da massa
+support/massas/dados/   contrato e leitura da massa gerada
+automation.plan.json    suites, tags e agendas
+orchestrator.cjs        executor único do plano
+PLANO.md                leitura humana do mapeamento
+playwright.config.ts    configuração Playwright
+```
 
-O [relatório de cobertura e execução](RELATORIO_COBERTURA_E_EXECUCAO.md) confronta o plano com a
-documentação interna e os tickets Jira do Intelligence, registrando também o resultado da última
-execução Playwright.
+Arquivos gerados ficam em `test-data/generated/`, `test-results/` e `playwright-report/`; todos são
+ignorados quando contêm dados ou evidências locais.
 
 ## Preparação
 
-1. Instale as dependências com `npm install`.
-2. Instale o Chromium com `npx playwright install chromium` quando necessário.
-3. Crie `.env.local` a partir de `.env.example` e preencha os valores do ambiente.
+```powershell
+npm install
+npx playwright install chromium
+Copy-Item .env.example .env.local
+```
 
-## Gerar massa a partir do SMART
+O `.env.local` é a fonte padrão e não é versionado. Neste ambiente ele já contém as configurações
+necessárias de Intelligence, SMART, banco e GBDS. Em CI, use o secret `INTELLIGENCE_ENV_FILE`.
 
-`tests/` contém somente testes da aplicação, separados em `tests/ui` e `tests/api`. Geradores de
-massa, clientes, acesso ao banco e demais recursos auxiliares ficam exclusivamente em `support/`.
-O gerador atual está em `support/functions/massa`.
-
-Preencha também `SMART_API_BASE_URL`, as credenciais de operador e a conexão somente leitura do
-banco SMART. Em seguida execute:
+## Execução
 
 ```powershell
+npm run validar
+npm run test:smoke
+npm run test:regression
+npm run test:destructive
+npm run test:release
 npm run massa:smart
 ```
 
-O gerador seleciona processos que já possuem `TGUID` e `PGUID` na tabela `Process`, consulta os
-biográficos pela API oficial `GET /api/processos/{id}` e grava
-`test-data/generated/intelligence.busca.massa.json`. Ele tenta cobrir PGUID, TGUID, ID externo,
-CPF, data de nascimento, nome e CIB; se algum tipo não existir nos candidatos, informa exatamente
-qual ficou bloqueado. Os testes atuais usam automaticamente os TGUID/PGUID gerados, mantendo as
-variáveis `INT_100_TGUID` e `INT_100_PGUID` como precedência manual.
+- `smoke`: 6 verificações críticas e estáveis.
+- `regression`: os 42 cenários mantidos no projeto.
+- `destructive`: 9 testes seguros de robustez; não altera dados reais.
+- `release`: todos os cenários da release mapeada.
+- `massa:smart`: diagnóstico isolado da geração de massa.
 
-O cliente de banco bloqueia por código qualquer SQL diferente de
-`SELECT/SHOW/DESCRIBE/EXPLAIN`, rejeita comandos empilhados e não cria ou altera massa.
+O [plano](automation.plan.json) é consumido pelo orquestrador local e pelo workflow agendado. Veja
+[PLANO.md](PLANO.md) para agenda, tags e critérios de seleção.
 
-O `.env.local` não é versionado. Ausência de URL, credencial, massa ou liberação do front produz
-falha explícita de configuração; os testes não usam `skip` para esconder pré-condições ausentes.
+## Regras de manutenção
 
-## Validação e execução
-
-```powershell
-npm run typecheck
-npm run validar
-npm run test:list
-npm run test:intelligence
-npm run test:ui
-npm run test:api
-```
-
-As evidências são gravadas em `test-results/` e `playwright-report/`, incluindo JSON, traces,
-screenshots e vídeos conforme a disponibilidade e o resultado.
-
-## Fronteira com o SMART
-
-Este projeto trouxe do SMART somente o necessário para obter massa: autenticação, consulta da API
-e oráculo de banco em leitura. A criação/captura de um processo novo continua no fluxo responsável
-do SMART, porque um processo recém-criado nasce aguardando captura e ainda não possui TGUID/PGUID.
-Não há escrita direta no SMART ou no GBDS.
+- Novo cenário entra no par positivo/negativo da camada correspondente e recebe tags de plano.
+- Não criar uma pasta por ticket, release ou seletor; pasta representa camada ou produto.
+- Page Object termina em `.page.ts`, cliente em `.client.ts`, banco em `.repository.ts` e fluxo em `.flow.ts`.
+- `npm run validar:estrutura` impede arquivos fora desse contrato.
+- Ausência de conta, permissão ou massa falha explicitamente como `BLOQUEADO`; não usar `skip`.
+- SQL do gerador aceita somente `SELECT`, `SHOW`, `DESCRIBE` e `EXPLAIN`.
+- Segredos permanecem exclusivamente no `.env.local` ou no cofre do executor.

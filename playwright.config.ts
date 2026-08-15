@@ -1,7 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import dotenv from 'dotenv';
-
-dotenv.config({ path: '.env.local', quiet: true });
+import './support/config/ambiente';
 
 export default defineConfig({
   testDir: './tests',
@@ -10,6 +8,7 @@ export default defineConfig({
   forbidOnly: true,
   retries: 0,
   workers: 1,
+  globalSetup: require.resolve('./support/global-setup'),
   reporter: [
     ['list'],
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
