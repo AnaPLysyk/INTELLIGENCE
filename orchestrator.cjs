@@ -18,6 +18,15 @@ function suiteFromSchedule(schedule) {
   return matches[0][0];
 }
 
+function ticketFromEnv() {
+  const ticket = process.env.QA_TICKET_KEY?.trim();
+  if (!ticket) return null;
+  if (!/^[A-Z][A-Z0-9]+-\d+$/i.test(ticket)) {
+    fail(`ticket invalido recebido em QA_TICKET_KEY: ${ticket}`);
+  }
+  return ticket.toUpperCase();
+}
+
 const args = process.argv.slice(2);
 const scheduled = args.includes('--scheduled');
 const explicit = args.find((arg) => !arg.startsWith('--'));
@@ -30,21 +39,28 @@ if (!suite) {
   fail(`suite desconhecida '${suiteName}'. Opcoes: ${Object.keys(plan.suites).join(', ')}`);
 }
 
+const ticket = ticketFromEnv();
+const grep = ticket ? `@${ticket.toLowerCase()}` : suite.grep;
+
 if (args.includes('--show-plan')) {
   process.stdout.write(`${JSON.stringify({
     project: plan.project,
     release: plan.release,
     selectedSuite: suiteName,
+    selectedTicket: ticket,
+    selectedGrep: grep,
     ...suite,
   }, null, 2)}\n`);
   process.exit(0);
 }
 
-const playwrightArgs = ['test', '--grep', suite.grep];
+const playwrightArgs = ['test', '--grep', grep];
 if (args.includes('--list')) playwrightArgs.push('--list');
 
+const filtroTicket = ticket ? ` ticket=${ticket} grep=${grep}` : '';
+const quantidade = ticket ? 'filtered' : suite.expectedTests;
 process.stdout.write(
-  `[orchestrator] project=${plan.project} suite=${suiteName} release=${plan.release} tests=${suite.expectedTests}\n`,
+  `[orchestrator] project=${plan.project} suite=${suiteName} release=${plan.release}${filtroTicket} tests=${quantidade}\n`,
 );
 
 const playwrightCli = require.resolve('@playwright/test/cli');
