@@ -88,4 +88,34 @@ test.describe('Intelligence UI — acesso restrito', () => {
       await bdd.entao('o TGUID solicitado não aparece na página', () => intelligence.validarTransacaoNaoExposta(tguid));
     },
   );
+
+  test(
+    '[INT-33-SPEC-01] Exige critérios verificáveis para padronização e validação de campos',
+    { tag: ['@ui', '@intelligence', '@negative', '@int-33', '@introduced-in-1.8.1', '@coverage-gap', '@specification'] },
+    async ({}, testInfo) => {
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-33', release: '1.8.1', objetivo: 'Não inventar regra de padronização sem critérios observáveis',
+      });
+      await bdd.dado('que o ticket não informa os campos nem as regras de validação', async () => {
+        throw new Error(
+          'BLOQUEADO: INT-33 não informa quais campos devem ser convertidos para maiúsculas nem quais validações são esperadas.',
+        );
+      });
+    },
+  );
+
+  test(
+    '[INT-30-NIST-02] Exige regra do tipo de imagem para validar o NIST exportado',
+    { tag: ['@ui', '@intelligence', '@negative', '@int-30', '@introduced-in-2.0.0', '@coverage-gap', '@export', '@nist'] },
+    async ({}, testInfo) => {
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-30', release: '2.0.0', objetivo: 'Validar o tipo de imagem interno do arquivo NIST exportado',
+      });
+      await bdd.dado('que a Release Note exige exportar NIST com o tipo correto de imagem', async () => {
+        throw new Error(
+          'BLOQUEADO: INT-30 não informa no Jira qual tipo de imagem deve existir no NIST nem a regra de inspeção do arquivo.',
+        );
+      });
+    },
+  );
 });
