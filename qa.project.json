@@ -29,6 +29,24 @@
       }
     ]
   },
+  "results": {
+    "smoke": {
+      "dir": "test-results",
+      "filename": "qa-result.json"
+    },
+    "regression": {
+      "dir": "test-results",
+      "filename": "qa-result.json"
+    },
+    "release": {
+      "dir": "test-results",
+      "filename": "qa-result.json"
+    },
+    "scheduled": {
+      "dir": "test-results",
+      "filename": "qa-result.json"
+    }
+  },
   "sonar": {
     "projectKey": "AnaPLysyk_INTELLIGENCE",
     "organization": "anaplysyk",
