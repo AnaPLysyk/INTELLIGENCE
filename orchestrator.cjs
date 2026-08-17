@@ -46,6 +46,48 @@ function grepFromTickets(tickets) {
   return tickets.map((ticket) => `@${ticket.toLowerCase()}`).join('|');
 }
 
+function envComMetadadosDaMassa() {
+  const env = { ...process.env };
+  const arquivo = path.resolve(
+    __dirname,
+    env.INTELLIGENCE_MASSA_FILE?.trim() || 'test-data/generated/intelligence.busca.massa.json',
+  );
+
+  if (!fs.existsSync(arquivo)) return env;
+
+  let massa;
+  try {
+    massa = JSON.parse(fs.readFileSync(arquivo, 'utf8'));
+  } catch {
+    process.stderr.write('[orchestrator] massa gerada invalida; metadados de campos nao foram derivados.\n');
+    return env;
+  }
+
+  const buscas = massa?.buscas && typeof massa.buscas === 'object' ? massa.buscas : {};
+  const itens = Object.values(buscas).filter((item) => item && typeof item === 'object');
+  const chave = itens.find((item) => item.kind === 'KEY' && typeof item.seletor === 'string');
+  const biografico = itens.find((item) => item.kind === 'BIOGRAPHIC' && typeof item.seletor === 'string');
+  const nascimento = buscas.birthdate;
+  const campoData = nascimento?.kind === 'BIOGRAPHIC' && typeof nascimento.seletor === 'string'
+    ? nascimento.seletor
+    : null;
+
+  if (!env.INT_31_KEY_FIELD_LABEL && chave?.seletor) {
+    env.INT_31_KEY_FIELD_LABEL = chave.seletor;
+  }
+  if (!env.INT_31_BIOGRAPHIC_FIELD_LABEL && biografico?.seletor) {
+    env.INT_31_BIOGRAPHIC_FIELD_LABEL = biografico.seletor;
+  }
+  if (!env.INT_40_DATE_FIELD_LABEL && campoData) {
+    env.INT_40_DATE_FIELD_LABEL = campoData;
+  }
+  if (!env.INT_32_DATE_FIELD_LABEL && campoData) {
+    env.INT_32_DATE_FIELD_LABEL = campoData;
+  }
+
+  return env;
+}
+
 const args = process.argv.slice(2);
 const scheduled = args.includes('--scheduled');
 const explicit = args.find((arg) => !arg.startsWith('--'));
@@ -108,10 +150,12 @@ process.stdout.write(
 );
 
 const playwrightCli = require.resolve('@playwright/test/cli');
+const childEnv = envComMetadadosDaMassa();
 const result = spawnSync(process.execPath, [playwrightCli, ...playwrightArgs], {
   cwd: __dirname,
   stdio: 'inherit',
   shell: false,
+  env: childEnv,
 });
 if (result.error) fail(result.error.message);
 
