@@ -70,4 +70,20 @@ const result = spawnSync(process.execPath, [playwrightCli, ...playwrightArgs], {
   shell: false,
 });
 if (result.error) fail(result.error.message);
+
+if (!args.includes('--list')) {
+  const qaResultScript = path.resolve(__dirname, 'support', 'playwright', 'qa-result.cjs');
+  const qaResult = spawnSync(process.execPath, [qaResultScript], {
+    cwd: __dirname,
+    stdio: 'inherit',
+    shell: false,
+    env: process.env,
+  });
+  if (qaResult.error) fail(qaResult.error.message);
+  if (qaResult.status !== 0) {
+    process.stderr.write(`[orchestrator] falha ao gerar resultado estruturado: status=${qaResult.status}\n`);
+    process.exit(qaResult.status ?? 1);
+  }
+}
+
 process.exit(result.status ?? 1);
