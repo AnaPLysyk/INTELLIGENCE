@@ -15,6 +15,12 @@ function obterCredenciaisAdministrativas(): CredenciaisIntelligence {
   return { usuario, senha };
 }
 
+function envObrigatoria(nome: string): string {
+  const valor = process.env[nome]?.trim();
+  if (!valor) throw new Error(`BLOQUEADO: configure ${nome} com a massa especifica do ticket.`);
+  return valor;
+}
+
 test.describe('Intelligence UI — acesso permitido', () => {
   test.setTimeout(120_000);
 
@@ -129,6 +135,135 @@ test.describe('Intelligence UI — acesso permitido', () => {
       await bdd.quando('abre os detalhes do perfil', () => intelligence.abrirDetalhesDoPerfilPorPguid(pguid));
       await bdd.entao('nenhum controle de escrita está habilitado', () =>
         intelligence.validarAusenciaDeControlesDeEscrita());
+    },
+  );
+
+  test(
+    '[INT-31-UI-01] Não disponibiliza campos de chave para edição da transação',
+    { tag: [...TAGS, '@int-31', '@introduced-in-1.8.1', '@editing', '@biographics'] },
+    async ({ page }, testInfo) => {
+      const intelligence = new IntelligencePage(page);
+      const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_31_TGUID);
+      const chave = envObrigatoria('INT_31_KEY_FIELD_LABEL');
+      const biografico = envObrigatoria('INT_31_BIOGRAPHIC_FIELD_LABEL');
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-31', release: '1.8.1', objetivo: 'Renderizar na edição somente campos biográficos',
+      });
+      await bdd.dado('um administrador está autenticado', () =>
+        intelligence.autenticarComCredenciais(obterCredenciaisAdministrativas()));
+      await bdd.e('uma transação válida está aberta', async () => {
+        await intelligence.abrirDetalhesDaTransacaoPorTguid(tguid);
+        await intelligence.validarDetalhesDaTransacaoCarregados(tguid);
+      });
+      await bdd.quando('abre a edição da transação', () => intelligence.abrirEdicaoAtual());
+      await bdd.entao('o campo de chave não está disponível para edição', () =>
+        intelligence.validarCampoNaoDisponivelParaEdicao(chave));
+      await bdd.e('um campo biográfico continua disponível para edição', () =>
+        intelligence.validarCampoDisponivelParaEdicao(biografico));
+    },
+  );
+
+  test(
+    '[INT-40-UI-01] Mantém o valor do campo de data ao editar uma transação',
+    { tag: [...TAGS, '@int-40', '@introduced-in-1.8.2', '@editing', '@date'] },
+    async ({ page }, testInfo) => {
+      const intelligence = new IntelligencePage(page);
+      const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_40_TGUID);
+      const campoData = envObrigatoria('INT_40_DATE_FIELD_LABEL');
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-40', release: '1.8.2', objetivo: 'Preservar o valor atual do biográfico de data na transação',
+      });
+      await bdd.dado('um administrador está autenticado', () =>
+        intelligence.autenticarComCredenciais(obterCredenciaisAdministrativas()));
+      await bdd.e('uma transação com campo biográfico de data está aberta', async () => {
+        await intelligence.abrirDetalhesDaTransacaoPorTguid(tguid);
+        await intelligence.validarDetalhesDaTransacaoCarregados(tguid);
+      });
+      await bdd.quando('abre a edição da transação', () => intelligence.abrirEdicaoAtual());
+      await bdd.entao('o campo de data permanece preenchido', () =>
+        intelligence.validarCampoDataPreenchidoNaEdicao(campoData));
+    },
+  );
+
+  test(
+    '[INT-40-UI-02] Mantém o valor do campo de data ao editar um perfil',
+    { tag: [...TAGS, '@int-40', '@introduced-in-1.8.2', '@editing', '@date', '@profile'] },
+    async ({ page }, testInfo) => {
+      const intelligence = new IntelligencePage(page);
+      const pguid = obterValorObrigatorioDaMassa('PGUID', process.env.INT_40_PGUID);
+      const campoData = envObrigatoria('INT_40_DATE_FIELD_LABEL');
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-40', release: '1.8.2', objetivo: 'Preservar o valor atual do biográfico de data no perfil',
+      });
+      await bdd.dado('um administrador está autenticado', () =>
+        intelligence.autenticarComCredenciais(obterCredenciaisAdministrativas()));
+      await bdd.e('um perfil com campo biográfico de data está aberto', () =>
+        intelligence.abrirDetalhesDoPerfilPorPguid(pguid));
+      await bdd.quando('abre a edição do perfil', () => intelligence.abrirEdicaoAtual());
+      await bdd.entao('o campo de data permanece preenchido', () =>
+        intelligence.validarCampoDataPreenchidoNaEdicao(campoData));
+    },
+  );
+
+  test(
+    '[INT-32-UI-01] Oferece calendário para editar campo biográfico de data',
+    { tag: [...TAGS, '@int-32', '@release-unassigned', '@editing', '@date'] },
+    async ({ page }, testInfo) => {
+      const intelligence = new IntelligencePage(page);
+      const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_32_TGUID);
+      const campoData = envObrigatoria('INT_32_DATE_FIELD_LABEL');
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-32', release: 'UNASSIGNED', objetivo: 'Disponibilizar calendário no biográfico de data',
+      });
+      await bdd.dado('um administrador está autenticado', () =>
+        intelligence.autenticarComCredenciais(obterCredenciaisAdministrativas()));
+      await bdd.e('uma transação com campo biográfico de data está aberta', async () => {
+        await intelligence.abrirDetalhesDaTransacaoPorTguid(tguid);
+        await intelligence.validarDetalhesDaTransacaoCarregados(tguid);
+      });
+      await bdd.quando('abre a edição da transação', () => intelligence.abrirEdicaoAtual());
+      await bdd.entao('o campo de data usa um controle com calendário', () =>
+        intelligence.validarCampoDataComCalendarioNaEdicao(campoData));
+    },
+  );
+
+  test(
+    '[INT-24-UI-01] Exibe histórico de perfis anteriores quando previousHistory existe',
+    { tag: [...TAGS, '@int-24', '@introduced-in-2.0.0', '@history', '@profile'] },
+    async ({ page }, testInfo) => {
+      const intelligence = new IntelligencePage(page);
+      const pguid = obterValorObrigatorioDaMassa('PGUID', process.env.INT_24_PGUID);
+      const pguidAnterior = envObrigatoria('INT_24_PREVIOUS_PGUID');
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-24', release: '2.0.0', objetivo: 'Exibir perfis anteriores que compõem o PGUID atual',
+      });
+      await bdd.dado('um administrador está autenticado', () =>
+        intelligence.autenticarComCredenciais(obterCredenciaisAdministrativas()));
+      await bdd.quando('abre um perfil cuja resposta possui previousHistory', () =>
+        intelligence.abrirDetalhesDoPerfilPorPguid(pguid));
+      await bdd.entao('o histórico exibe o PGUID anterior esperado', () =>
+        intelligence.validarHistoricoDePerfisAnteriores(pguidAnterior));
+    },
+  );
+
+  test(
+    '[INT-30-UI-01] Exporta o NIST da transação sem falha no navegador',
+    { tag: [...TAGS, '@int-30', '@introduced-in-2.0.0', '@export', '@nist'] },
+    async ({ page }, testInfo) => {
+      const intelligence = new IntelligencePage(page);
+      const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_30_TGUID);
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-30', release: '2.0.0', objetivo: 'Provar que a ação de exportação NIST gera um download',
+      });
+      await bdd.dado('um administrador está autenticado', () =>
+        intelligence.autenticarComCredenciais(obterCredenciaisAdministrativas()));
+      await bdd.e('uma transação exportável está aberta', async () => {
+        await intelligence.abrirDetalhesDaTransacaoPorTguid(tguid);
+        await intelligence.validarDetalhesDaTransacaoCarregados(tguid);
+      });
+      const download = await bdd.quando('aciona a exportação NIST', () => intelligence.exportarNistDaTelaAtual());
+      await bdd.entao('o navegador recebe um arquivo de exportação', () =>
+        expect(download.suggestedFilename().trim().length).toBeGreaterThan(0));
     },
   );
 });
