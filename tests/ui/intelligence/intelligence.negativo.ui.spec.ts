@@ -6,7 +6,7 @@ import { IntelligencePage } from '../../../support/functions/ui/intelligence/int
 import { obterValorObrigatorioDaMassa } from '../../../support/massas/dados/intelligence.busca.massa';
 
 const RELEASE = '5.5.0.5062';
-const TAGS = ['@regression', '@ui', '@intelligence', '@negative', '@int-100', '@release-5.5.0.5062'];
+const TAGS = ['@regression', '@ui', '@intelligence', '@negative', '@release-5.5.0.5062'];
 
 function obterCredenciaisAdministrativas(): { usuario: string; senha: string } {
   const usuario = process.env.INTELLIGENCE_ADMIN_USERNAME?.trim();
@@ -57,7 +57,7 @@ test.describe('Intelligence UI — acesso restrito', () => {
 
   test(
     '[INT-100-R3] Oculta a busca no acesso somente leitura',
-    { tag: [...TAGS, '@viewonly', '@search'] },
+    { tag: [...TAGS, '@int-100', '@viewonly', '@search'] },
     async ({ page, request }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_100_TGUID);
@@ -74,7 +74,7 @@ test.describe('Intelligence UI — acesso restrito', () => {
 
   test(
     '[INT-100-I8] Nega o deep-link da transação sem permissão',
-    { tag: [...TAGS, '@security', '@transaction'] },
+    { tag: [...TAGS, '@int-100', '@security', '@transaction'] },
     async ({ page, request }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_100_TGUID);
