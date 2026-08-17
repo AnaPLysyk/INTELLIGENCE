@@ -1,7 +1,15 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Download, type Locator, type Page } from '@playwright/test';
 
 export type CredenciaisIntelligence = { usuario: string; senha: string };
 export type OpcaoBuscaIntelligence = { valor: string; rotulo: string };
+
+type ControleEdicao = {
+  rotulo: string;
+  tipo: string;
+  valor: string;
+  disabled: boolean;
+  readOnly: boolean;
+};
 
 const ROTULOS_DE_ESCRITA = [
   /editar/i,
@@ -13,6 +21,15 @@ const ROTULOS_DE_ESCRITA = [
   /confirmar/i,
   /ver nova transa[cç][aã]o/i,
 ];
+
+function normalizarTexto(valor: string): string {
+  return valor
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
 
 export class IntelligencePage {
   constructor(private readonly page: Page) {}
@@ -64,8 +81,9 @@ export class IntelligencePage {
   }
 
   async abrirDetalhesDaTransacaoPorTguid(tguid: string): Promise<void> {
-    const template = process.env.INT_100_TRANSACAO_URL_TEMPLATE?.trim();
-    if (!template) throw new Error('CONFIGURACAO: INT_100_TRANSACAO_URL_TEMPLATE nao foi informado.');
+    const template = process.env.INTELLIGENCE_TRANSACAO_URL_TEMPLATE?.trim()
+      || process.env.INT_100_TRANSACAO_URL_TEMPLATE?.trim()
+      || '{base}/transaction/{tguid}';
     const url = template
       .replace('{base}', this.obterUrlBase())
       .replace('{tguid}', encodeURIComponent(tguid));
@@ -108,8 +126,9 @@ export class IntelligencePage {
   }
 
   async abrirDetalhesDoPerfilPorPguid(pguid: string): Promise<void> {
-    const template = process.env.INT_100_PERFIL_URL_TEMPLATE?.trim();
-    if (!template) throw new Error('CONFIGURACAO: INT_100_PERFIL_URL_TEMPLATE nao foi informado.');
+    const template = process.env.INTELLIGENCE_PERFIL_URL_TEMPLATE?.trim()
+      || process.env.INT_100_PERFIL_URL_TEMPLATE?.trim()
+      || '{base}/profile/{pguid}';
     const url = template
       .replace('{base}', this.obterUrlBase())
       .replace('{pguid}', encodeURIComponent(pguid));
@@ -172,5 +191,117 @@ export class IntelligencePage {
       payload,
     );
     return { dialogoAberto, scriptInjetado };
+  }
+
+  private async escopoEdicao(): Promise<Locator> {
+    const dialogos = this.page.getByRole('dialog');
+    const quantidade = await dialogos.count();
+    for (let indice = quantidade - 1; indice >= 0; indice -= 1) {
+      const dialogo = dialogos.nth(indice);
+      if (await dialogo.isVisible().catch(() => false)) return dialogo;
+    }
+    return this.page.locator('body');
+  }
+
+  private async lerControlesEdicao(): Promise<ControleEdicao[]> {
+    const escopo = await this.escopoEdicao();
+    return escopo.locator('input:visible, select:visible, textarea:visible').evaluateAll((controles) =>
+      controles.map((controle) => {
+        const elemento = controle as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+        const labels = 'labels' in elemento && elemento.labels
+          ? Array.from(elemento.labels).map((label) => label.textContent ?? '').join(' ')
+          : '';
+        const rotulo = [
+          labels,
+          elemento.getAttribute('aria-label') ?? '',
+          elemento.getAttribute('placeholder') ?? '',
+          elemento.getAttribute('name') ?? '',
+        ].filter(Boolean).join(' ').trim();
+        const readOnly = 'readOnly' in elemento ? Boolean(elemento.readOnly) : false;
+        return {
+          rotulo,
+          tipo: elemento.getAttribute('type') ?? elemento.tagName.toLowerCase(),
+          valor: 'value' in elemento ? String(elemento.value ?? '') : '',
+          disabled: Boolean(elemento.disabled),
+          readOnly,
+        };
+      }),
+    );
+  }
+
+  async abrirEdicaoAtual(): Promise<void> {
+    const editar = this.page.getByRole('button', { name: /editar/i }).first();
+    await expect(editar, 'A tela deve oferecer a acao Editar.').toBeVisible({ timeout: 30_000 });
+    await editar.click();
+    const escopo = await this.escopoEdicao();
+    await expect(
+      escopo.locator('input:visible, select:visible, textarea:visible').first(),
+      'A edicao deve exibir pelo menos um campo editavel.',
+    ).toBeVisible({ timeout: 30_000 });
+  }
+
+  async validarCampoNaoDisponivelParaEdicao(rotuloEsperado: string): Promise<void> {
+    const esperado = normalizarTexto(rotuloEsperado);
+    const controles = await this.lerControlesEdicao();
+    const encontrados = controles.filter((controle) => normalizarTexto(controle.rotulo).includes(esperado));
+    expect(
+      encontrados.length === 0 || encontrados.every((controle) => controle.disabled || controle.readOnly),
+      `O campo '${rotuloEsperado}' nao deve estar disponivel para edicao.`,
+    ).toBe(true);
+  }
+
+  async validarCampoDisponivelParaEdicao(rotuloEsperado: string): Promise<void> {
+    const esperado = normalizarTexto(rotuloEsperado);
+    const controles = await this.lerControlesEdicao();
+    const encontrado = controles.find((controle) => normalizarTexto(controle.rotulo).includes(esperado));
+    expect(encontrado, `O campo '${rotuloEsperado}' deve estar presente na edicao.`).toBeTruthy();
+    expect(encontrado?.disabled, `O campo '${rotuloEsperado}' deve estar habilitado.`).toBe(false);
+    expect(encontrado?.readOnly, `O campo '${rotuloEsperado}' nao deve ser somente leitura.`).toBe(false);
+  }
+
+  async validarCampoDataPreenchidoNaEdicao(rotuloEsperado: string): Promise<void> {
+    const esperado = normalizarTexto(rotuloEsperado);
+    const controles = await this.lerControlesEdicao();
+    const encontrado = controles.find((controle) => normalizarTexto(controle.rotulo).includes(esperado));
+    expect(encontrado, `O campo de data '${rotuloEsperado}' deve estar presente na edicao.`).toBeTruthy();
+    expect(
+      encontrado?.valor.trim(),
+      `O campo de data '${rotuloEsperado}' deve manter o valor atual ao abrir a edicao.`,
+    ).not.toBe('');
+  }
+
+  async validarCampoDataComCalendarioNaEdicao(rotuloEsperado: string): Promise<void> {
+    const esperado = normalizarTexto(rotuloEsperado);
+    const controles = await this.lerControlesEdicao();
+    const encontrado = controles.find((controle) => normalizarTexto(controle.rotulo).includes(esperado));
+    expect(encontrado, `O campo de data '${rotuloEsperado}' deve estar presente na edicao.`).toBeTruthy();
+    expect(
+      encontrado?.tipo.toLowerCase(),
+      `O campo '${rotuloEsperado}' deve usar um controle de data com calendario.`,
+    ).toBe('date');
+  }
+
+  async validarHistoricoDePerfisAnteriores(pguidAnterior: string): Promise<void> {
+    const corpo = this.page.locator('body');
+    await expect(
+      corpo,
+      'O perfil com previousHistory deve exibir o bloco Historico de perfis anteriores.',
+    ).toContainText(/hist[oó]rico de perfis anteriores/i, { timeout: 30_000 });
+    await expect(
+      corpo,
+      'O historico deve exibir o PGUID anterior esperado.',
+    ).toContainText(pguidAnterior, { ignoreCase: true, timeout: 30_000 });
+  }
+
+  async exportarNistDaTelaAtual(): Promise<Download> {
+    const botao = this.page.getByRole('button', { name: /nist/i }).first();
+    const link = this.page.getByRole('link', { name: /nist/i }).first();
+    const acionador = await botao.count() > 0 ? botao : link;
+    await expect(acionador, 'A tela deve oferecer a acao de exportacao NIST.').toBeVisible({ timeout: 30_000 });
+    const downloadPromise = this.page.waitForEvent('download', { timeout: 30_000 });
+    await acionador.click();
+    const download = await downloadPromise;
+    expect(await download.failure(), 'A exportacao NIST nao deve falhar no navegador.').toBeNull();
+    return download;
   }
 }
