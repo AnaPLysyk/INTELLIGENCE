@@ -27,6 +27,25 @@ function ticketFromEnv() {
   return ticket.toUpperCase();
 }
 
+function releaseFromContext(args) {
+  const inline = args.find((arg) => arg.startsWith('--release-version='));
+  const release = inline?.slice('--release-version='.length).trim()
+    || process.env.QA_RELEASE_VERSION?.trim()
+    || null;
+  if (!release) return null;
+  if (release !== 'unassigned' && !/^\d+\.\d+\.\d+(?:\.\d+)?$/.test(release)) {
+    fail(`release historica invalida: ${release}`);
+  }
+  return release;
+}
+
+function grepFromTickets(tickets) {
+  if (!Array.isArray(tickets) || tickets.length === 0) {
+    fail('release historica sem tickets mapeados');
+  }
+  return tickets.map((ticket) => `@${ticket.toLowerCase()}`).join('|');
+}
+
 const args = process.argv.slice(2);
 const scheduled = args.includes('--scheduled');
 const explicit = args.find((arg) => !arg.startsWith('--'));
@@ -40,16 +59,38 @@ if (!suite) {
 }
 
 const ticket = ticketFromEnv();
-const grep = ticket ? `@${ticket.toLowerCase()}` : suite.grep;
+const historicalRelease = releaseFromContext(args);
+
+if (ticket && historicalRelease) {
+  fail('QA_TICKET_KEY e QA_RELEASE_VERSION/--release-version nao podem ser usados juntos');
+}
+if (historicalRelease && suiteName !== 'release') {
+  fail('release historica deve ser executada pela suite release');
+}
+
+const historicalTickets = historicalRelease ? plan.releaseHistory?.[historicalRelease] : null;
+if (historicalRelease && !historicalTickets) {
+  fail(`release historica nao mapeada: ${historicalRelease}`);
+}
+
+const grep = ticket
+  ? `@${ticket.toLowerCase()}`
+  : historicalRelease
+    ? grepFromTickets(historicalTickets)
+    : suite.grep;
+
+const selectedRelease = historicalRelease || plan.release;
 
 if (args.includes('--show-plan')) {
   process.stdout.write(`${JSON.stringify({
     project: plan.project,
-    release: plan.release,
+    release: selectedRelease,
+    ...suite,
     selectedSuite: suiteName,
     selectedTicket: ticket,
+    selectedHistoricalRelease: historicalRelease,
+    selectedHistoricalTickets: historicalTickets,
     selectedGrep: grep,
-    ...suite,
   }, null, 2)}\n`);
   process.exit(0);
 }
@@ -57,10 +98,13 @@ if (args.includes('--show-plan')) {
 const playwrightArgs = ['test', '--grep', grep];
 if (args.includes('--list')) playwrightArgs.push('--list');
 
-const filtroTicket = ticket ? ` ticket=${ticket} grep=${grep}` : '';
-const quantidade = ticket ? 'filtered' : suite.expectedTests;
+const filtroTicket = ticket ? ` ticket=${ticket}` : '';
+const filtroRelease = historicalRelease
+  ? ` historicalRelease=${historicalRelease} tickets=${historicalTickets.join(',')}`
+  : '';
+const quantidade = ticket || historicalRelease ? 'filtered' : suite.expectedTests;
 process.stdout.write(
-  `[orchestrator] project=${plan.project} suite=${suiteName} release=${plan.release}${filtroTicket} tests=${quantidade}\n`,
+  `[orchestrator] project=${plan.project} suite=${suiteName} release=${selectedRelease}${filtroTicket}${filtroRelease} grep=${grep} tests=${quantidade}\n`,
 );
 
 const playwrightCli = require.resolve('@playwright/test/cli');
