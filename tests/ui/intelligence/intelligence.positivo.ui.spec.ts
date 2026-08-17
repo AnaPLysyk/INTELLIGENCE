@@ -6,7 +6,7 @@ import { IntelligencePage, type CredenciaisIntelligence } from '../../../support
 import { lerMassaBusca, obterValorObrigatorioDaMassa } from '../../../support/massas/dados/intelligence.busca.massa';
 
 const RELEASE = '5.5.0.5062';
-const TAGS = ['@regression', '@ui', '@intelligence', '@positive', '@int-100', '@release-5.5.0.5062'];
+const TAGS = ['@regression', '@ui', '@intelligence', '@positive', '@release-5.5.0.5062'];
 
 function obterCredenciaisAdministrativas(): CredenciaisIntelligence {
   const usuario = process.env.INTELLIGENCE_ADMIN_USERNAME?.trim();
@@ -42,7 +42,7 @@ test.describe('Intelligence UI — acesso permitido', () => {
 
   test(
     '[INT-100-I5] Mantém a busca disponível para acesso completo',
-    { tag: [...TAGS, '@smoke', '@admin', '@search'] },
+    { tag: [...TAGS, '@int-100', '@smoke', '@admin', '@search'] },
     async ({ page }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const bdd = await criarCenarioBDD(testInfo, {
@@ -57,7 +57,7 @@ test.describe('Intelligence UI — acesso permitido', () => {
 
   test(
     '[INT-100-BASELINE] Abre os detalhes da transação pelo TGUID',
-    { tag: [...TAGS, '@smoke', '@admin', '@deeplink', '@transaction'] },
+    { tag: [...TAGS, '@int-100', '@smoke', '@admin', '@deeplink', '@transaction'] },
     async ({ page }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_100_TGUID);
@@ -98,7 +98,7 @@ test.describe('Intelligence UI — acesso permitido', () => {
 
   test(
     '[INT-100-I1] Exibe a transação sem controles de escrita',
-    { tag: [...TAGS, '@viewonly', '@readonly', '@transaction'] },
+    { tag: [...TAGS, '@int-100', '@viewonly', '@readonly', '@transaction'] },
     async ({ page, request }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_100_TGUID);
@@ -116,7 +116,7 @@ test.describe('Intelligence UI — acesso permitido', () => {
 
   test(
     '[INT-100-I2] Exibe o perfil sem controles de escrita',
-    { tag: [...TAGS, '@viewonly', '@readonly', '@profile'] },
+    { tag: [...TAGS, '@int-100', '@viewonly', '@readonly', '@profile'] },
     async ({ page, request }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const pguid = obterValorObrigatorioDaMassa('PGUID', process.env.INT_100_PGUID);
