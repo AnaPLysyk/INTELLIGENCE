@@ -7,7 +7,8 @@
     "smoke": "npm run test:smoke",
     "regression": "npm run test:regression",
     "release": "npm run test:release",
-    "scheduled": "npm run test:scheduled"
+    "scheduled": "npm run test:scheduled",
+    "porTicket": "node support/qa/rodar-por-ticket.cjs"
   },
   "plan": "automation.plan.json",
   "runtime": {
