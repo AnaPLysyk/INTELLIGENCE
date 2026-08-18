@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { criarCenarioBDD } from '../../../support/functions/comum/bdd.steps';
 import { obterCredenciaisParaPerfilIntelligence } from '../../../support/functions/api/intelligence/resolver-perfil-acesso.flow';
+import { autenticarSmart, consultarProcessoSmart } from '../../../support/functions/api/integracao/smart/smart.client';
 import { IntelligencePage, type CredenciaisIntelligence } from '../../../support/functions/ui/intelligence/intelligence.page';
 import { lerMassaBusca, obterValorObrigatorioDaMassa } from '../../../support/massas/dados/intelligence.busca.massa';
 
@@ -19,6 +20,21 @@ function envObrigatoria(nome: string): string {
   const valor = process.env[nome]?.trim();
   if (!valor) throw new Error(`BLOQUEADO: configure ${nome} com a massa especifica do ticket.`);
   return valor;
+}
+
+function extrairIdsDeCamposSmart(detalhes: unknown, propriedade: 'keys' | 'biographics'): string[] {
+  if (!detalhes || typeof detalhes !== 'object' || Array.isArray(detalhes)) return [];
+  const raiz = detalhes as Record<string, unknown>;
+  const data = raiz.data && typeof raiz.data === 'object' && !Array.isArray(raiz.data)
+    ? raiz.data as Record<string, unknown>
+    : raiz;
+  const lista = data[propriedade];
+  if (!Array.isArray(lista)) return [];
+  return [...new Set(lista.flatMap((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    const id = (item as Record<string, unknown>).id;
+    return typeof id === 'string' && id.trim() ? [id.trim()] : [];
+  }))];
 }
 
 test.describe('Intelligence UI — acesso permitido', () => {
@@ -141,11 +157,21 @@ test.describe('Intelligence UI — acesso permitido', () => {
   test(
     '[INT-31-UI-01] Não disponibiliza campos de chave para edição da transação',
     { tag: [...TAGS, '@int-31', '@introduced-in-1.8.1', '@editing', '@biographics'] },
-    async ({ page }, testInfo) => {
+    async ({ page, request }, testInfo) => {
       const intelligence = new IntelligencePage(page);
-      const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_31_TGUID);
-      const chave = envObrigatoria('INT_31_KEY_FIELD_LABEL');
-      const biografico = envObrigatoria('INT_31_BIOGRAPHIC_FIELD_LABEL');
+      const transacao = lerMassaBusca().buscas.TGUID;
+      if (!transacao?.valor || !transacao.esperado.processId) {
+        throw new Error('BLOQUEADO: a massa de TGUID não informa a transação SMART de origem.');
+      }
+      const tguid = transacao.valor;
+      const tokenSmart = await autenticarSmart(request);
+      const detalhesSmart = await consultarProcessoSmart(request, tokenSmart, transacao.esperado.processId);
+      const chaves = extrairIdsDeCamposSmart(detalhesSmart, 'keys');
+      const biograficos = extrairIdsDeCamposSmart(detalhesSmart, 'biographics');
+      if (chaves.length === 0) throw new Error('BLOQUEADO: a transação SMART da massa não possui campos de chave.');
+      if (biograficos.length === 0) throw new Error('BLOQUEADO: a transação SMART da massa não possui campos biográficos.');
+      const biografico = biograficos.find((id) => id.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === 'nome')
+        || biograficos[0];
       const bdd = await criarCenarioBDD(testInfo, {
         ticket: 'INT-31', release: '1.8.1', objetivo: 'Renderizar na edição somente campos biográficos',
       });
@@ -156,9 +182,10 @@ test.describe('Intelligence UI — acesso permitido', () => {
         await intelligence.validarDetalhesDaTransacaoCarregados(tguid);
       });
       await bdd.quando('abre a edição da transação', () => intelligence.abrirEdicaoAtual());
-      await bdd.entao('o campo de chave não está disponível para edição', () =>
-        intelligence.validarCampoNaoDisponivelParaEdicao(chave));
-      await bdd.e('um campo biográfico continua disponível para edição', () =>
+      await bdd.entao('nenhum campo de chave da transação está disponível para edição', async () => {
+        for (const chave of chaves) await intelligence.validarCampoNaoDisponivelParaEdicao(chave);
+      });
+      await bdd.e('um campo biográfico da própria transação continua disponível para edição', () =>
         intelligence.validarCampoDisponivelParaEdicao(biografico));
     },
   );
