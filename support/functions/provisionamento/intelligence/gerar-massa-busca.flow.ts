@@ -22,7 +22,7 @@ type CampoEncontrado = { nome: string; valor: string };
 const ALIASES: Record<string, string[]> = {
   cpf: ['cpf', 'cpfcidadao'],
   name: ['nome', 'fullname', 'name'],
-  birthdate: ['birthdate', 'birth_date', 'datanascimento'],
+  birthdate: ['birthdate', 'birth_date', 'datanascimento', 'datadenascimento'],
   'EXTERNAL.ID': ['external.id', 'externalid', 'external_id', 'externalidentifier'],
   cib: ['cib', 'cib_exid', 'cibexid'],
 };
@@ -99,7 +99,15 @@ async function estaPesquisavelNoIntelligence(
   }
 
   const itens = extrairItens(resultado.list.body);
-  return extrairContagem(resultado.count.body) > 0 && itens.length > 0 && contemValor(itens, item.valor);
+  const quantidade = extrairContagem(resultado.count.body);
+  if (quantidade <= 0 || itens.length === 0) return false;
+
+  const identidadesEsperadas = [item.esperado.pguid, item.esperado.tguid]
+    .map((valor) => String(valor || '').trim())
+    .filter(Boolean);
+  const encontrouIdentidade = identidadesEsperadas.some((valor) => contemValor(itens, valor));
+
+  return encontrouIdentidade || contemValor(itens, item.valor);
 }
 
 export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContext): Promise<ArquivoMassaBusca> {

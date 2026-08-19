@@ -9,13 +9,18 @@ import {
   extrairContagem,
   extrairItens,
   listarCamposBuscaIntelligence,
+  obterDetalhesPerfilIntelligence,
   obterDetalhesTransacaoIntelligence,
   payloadDaMassa,
 } from '../../../support/functions/api/intelligence/intelligence.client';
+import { obterCredenciaisParaPerfilIntelligence } from '../../../support/functions/api/intelligence/resolver-perfil-acesso.flow';
 import { lerMassaBusca, obterValorObrigatorioDaMassa } from '../../../support/massas/dados/intelligence.busca.massa';
 
 const RELEASE = '5.5.0.5062';
 const TAGS = ['@regression', '@api', '@intelligence', '@positive', '@search', '@release-5.5.0.5062'];
+
+const RELEASE_INT_100 = 'SEM-FIX-VERSION';
+const TAGS_INT_100 = ['@regression', '@api', '@intelligence', '@positive', '@release-unassigned'];
 const CASOS = [
   { id: 'API-POS-CPF-01', tipo: 'cpf', descricao: 'CPF' },
   { id: 'API-POS-EXTERNAL-01', tipo: 'EXTERNAL.ID', descricao: 'ID externo' },
@@ -118,6 +123,26 @@ test.describe('Intelligence API — buscas com resultado', () => {
       await bdd.entao('a API retorna sucesso e mantém o TGUID na resposta', () => {
         expect(resposta.response.status()).toBe(200);
         expect(contemValor(resposta.body, tguid), 'Os detalhes devem conter o TGUID consultado.').toBe(true);
+      });
+    },
+  );
+
+  test(
+    '[API-POS-PROFILE-VIEWONLY-01] Permite ao perfil somente leitura consultar o perfil por PGUID',
+    { tag: [...TAGS_INT_100, '@int-100', '@viewonly', '@profile'] },
+    async ({ request }, testInfo) => {
+      const pguid = obterValorObrigatorioDaMassa('PGUID', process.env.INT_100_PGUID);
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-100-I2', release: RELEASE_INT_100, objetivo: 'Permitir a leitura do perfil para o usuario view-only',
+      });
+      const credenciais = await bdd.dado('existe uma conta com perfil somente leitura', () =>
+        obterCredenciaisParaPerfilIntelligence(request, 'view-only'));
+      const sessionGuid = await bdd.e('essa conta possui uma sessão autenticada', () =>
+        autenticarIntelligenceApi(request, credenciais));
+      const resposta = await bdd.quando('consulta o perfil pelo PGUID conhecido', () =>
+        obterDetalhesPerfilIntelligence(request, pguid, sessionGuid));
+      await bdd.entao('a API carrega o perfil solicitado para o usuario view-only', () => {
+        expect(resposta.response.status(), 'O backend deve carregar o perfil solicitado para o usuario view-only.').toBe(200);
       });
     },
   );

@@ -13,7 +13,8 @@
     "test:destructive": "node orchestrator.cjs destructive",
     "test:release": "node orchestrator.cjs release",
     "test:scheduled": "node orchestrator.cjs --scheduled",
-    "plan:show": "node orchestrator.cjs --show-plan"
+    "plan:show": "node orchestrator.cjs --show-plan",
+    "report:pdf": "node support/playwright/gerar-relatorio-pdf.cjs"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

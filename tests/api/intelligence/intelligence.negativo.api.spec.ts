@@ -8,6 +8,7 @@ import {
   extrairContagem,
   extrairItens,
   listarCamposBuscaIntelligence,
+  obterDetalhesPerfilIntelligence,
   obterDetalhesTransacaoIntelligence,
   payloadDaMassa,
   solicitarSessaoIntelligenceApi,
@@ -18,6 +19,16 @@ import { lerMassaBusca } from '../../../support/massas/dados/intelligence.busca.
 
 const RELEASE = '5.5.0.5062';
 const TAGS = ['@regression', '@api', '@intelligence', '@negative', '@security', '@release-5.5.0.5062'];
+
+const RELEASE_INT_100 = 'SEM-FIX-VERSION';
+const TAGS_INT_100 = [
+  '@regression',
+  '@api',
+  '@intelligence',
+  '@negative',
+  '@security',
+  '@release-unassigned',
+];
 const PAYLOAD_SEM_DADO_REAL: PayloadBuscaIntelligence = {
   name: 'cpf',
   value: '00000000000',
@@ -93,7 +104,7 @@ test.describe('Intelligence API — autorização da busca', () => {
 
   test(
     '[API-NEG-COMMON-06] Nega busca ao perfil somente leitura',
-    { tag: [...TAGS, '@viewonly', '@int-100'] },
+    { tag: [...TAGS_INT_100, '@viewonly', '@int-100'] },
     async ({ request }, testInfo) => {
       const entrada = ['cpf', 'EXTERNAL.ID', 'birthdate', 'name', 'cib']
         .map((tipo) => lerMassaBusca().buscas[tipo])
@@ -101,7 +112,7 @@ test.describe('Intelligence API — autorização da busca', () => {
       if (!entrada) throw new Error('BLOQUEADO: nenhuma massa compativel com profile/list foi gerada.');
 
       const bdd = await criarCenarioBDD(testInfo, {
-        ticket: 'INT-100', release: RELEASE, objetivo: 'Bloquear a busca para o perfil somente leitura',
+        ticket: 'INT-100', release: RELEASE_INT_100, objetivo: 'Bloquear a busca para o perfil somente leitura',
       });
       const credenciais = await bdd.dado('existe uma conta com perfil somente leitura', () =>
         obterCredenciaisParaPerfilIntelligence(request, 'view-only'));
@@ -110,6 +121,26 @@ test.describe('Intelligence API — autorização da busca', () => {
       const resultado = await bdd.quando('a conta chama count e list diretamente', () =>
         buscarPerfisIntelligence(request, payloadDaMassa(entrada), sessionGuid));
       await bdd.entao('os dois endpoints respondem 403', () => validarStatusDaBusca(resultado, 403));
+    },
+  );
+
+  test(
+    '[API-NEG-PROFILE-NOTFOUND-01] Trata PGUID inexistente do perfil somente leitura sem erro interno',
+    { tag: [...TAGS_INT_100, '@viewonly', '@int-100', '@profile', '@not-found'] },
+    async ({ request }, testInfo) => {
+      const pguidInexistente = crypto.randomUUID().toUpperCase();
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-100-I3', release: RELEASE_INT_100, objetivo: 'Tratar PGUID inexistente sem expor erro interno ao usuario view-only',
+      });
+      const credenciais = await bdd.dado('existe uma conta com perfil somente leitura', () =>
+        obterCredenciaisParaPerfilIntelligence(request, 'view-only'));
+      const sessionGuid = await bdd.e('essa conta possui uma sessão autenticada', () =>
+        autenticarIntelligenceApi(request, credenciais));
+      const resposta = await bdd.quando('consulta um PGUID inexistente', () =>
+        obterDetalhesPerfilIntelligence(request, pguidInexistente, sessionGuid));
+      await bdd.entao('a API trata o perfil inexistente sem responder 500', () => {
+        validarRespostaSemErroInterno(resposta.response.status(), 'profile/person');
+      });
     },
   );
 
@@ -276,6 +307,30 @@ test.describe('Intelligence API — autorização da busca', () => {
         validarRespostaSemErroInterno(resultado.list.response.status(), 'list');
         if (resultado.list.response.ok()) expect(extrairItens(resultado.list.body).length).toBeLessThanOrEqual(1);
       });
+    },
+  );
+
+  test(
+    '[INT-100-WRITE-ENDPOINTS-01] Exige o contrato dos endpoints de escrita para validar o bloqueio ao perfil somente leitura',
+    { tag: ['@api', '@intelligence', '@negative', '@security', '@int-100', '@viewonly', '@coverage-gap', '@release-unassigned'] },
+    async ({}, testInfo) => {
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-100', release: RELEASE_INT_100, objetivo: 'Não inventar metodo/corpo de requisicao para os endpoints de escrita do perfil',
+      });
+      await bdd.dado(
+        'o comentario de Rodrigo Giolo no INT-100 lista os endpoints que devem negar intelligence_view_only, sem informar metodo HTTP nem corpo da requisicao',
+        async () => {
+          throw new Error(
+            'BLOQUEADO: INT-100 nao documenta o contrato (metodo, path params e body) de '
+            + 'profile/consolidate/{pguid}, profile/consolidate/{pguid}/add/{tguid}, '
+            + 'profile/consolidate/{pguid}/addTguids, profile/consolidate/{pguid}/minus/{tguid}, '
+            + 'profile/updateBio/{pguid}/{tguid} e profile/people/{pguid}/keys. '
+            + 'Chamar esses endpoints de escrita adivinhando o contrato arrisca mutar dados reais caso a '
+            + 'autorizacao esteja quebrada (ja confirmado em profile/person e profile/list/count). '
+            + 'Peca ao time de dev o metodo HTTP e o payload de cada endpoint para automatizar com seguranca.',
+          );
+        },
+      );
     },
   );
 });
