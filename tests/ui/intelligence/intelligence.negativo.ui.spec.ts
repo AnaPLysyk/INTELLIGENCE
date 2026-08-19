@@ -134,6 +134,16 @@ test.describe('Intelligence UI — acesso restrito', () => {
     },
   );
 
+  /*
+   * Classificacao registrada em 19/08/2026 (analise cruzada com o Rodrigo sobre
+   * INT-100): o INT-100 SO exige que PGUID inexistente nao responda 500 — isso
+   * ja e coberto, com expect() rigido (nao soft), em API-NEG-PROFILE-NOTFOUND-01
+   * (intelligence.negativo.api.spec.ts). As checagens abaixo (tela/copy exata)
+   * sao endurecimento que a automacao acrescentou por conta propria; nao estao
+   * descritas explicitamente no INT-100. Por isso usam expect.soft: uma falha
+   * aqui e uma nuance de UI/copy a triar separadamente, NAO evidencia sozinha
+   * de que o INT-100 esta quebrado — esse veredito depende do teste de API.
+   */
   test(
     '[INT-100-I3] Redireciona perfil inexistente para a tela informativa',
     { tag: [...TAGS_INT_100, '@int-100', '@viewonly', '@profile', '@not-found'] },
