@@ -9,6 +9,15 @@ import { lerMassaBusca, obterValorObrigatorioDaMassa } from '../../../support/ma
 const RELEASE = '5.5.0.5062';
 const TAGS = ['@regression', '@ui', '@intelligence', '@positive', '@release-5.5.0.5062'];
 
+const RELEASE_INT_100 = 'SEM-FIX-VERSION';
+const TAGS_INT_100 = [
+  '@regression',
+  '@ui',
+  '@intelligence',
+  '@positive',
+  '@release-unassigned',
+];
+
 function obterCredenciaisAdministrativas(): CredenciaisIntelligence {
   const usuario = process.env.INTELLIGENCE_ADMIN_USERNAME?.trim();
   const senha = process.env.INTELLIGENCE_ADMIN_PASSWORD?.trim();
@@ -64,11 +73,11 @@ test.describe('Intelligence UI — acesso permitido', () => {
 
   test(
     '[INT-100-I5] Mantém a busca disponível para acesso completo',
-    { tag: [...TAGS, '@int-100', '@smoke', '@admin', '@search'] },
+    { tag: [...TAGS_INT_100, '@int-100', '@smoke', '@admin', '@search'] },
     async ({ page }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const bdd = await criarCenarioBDD(testInfo, {
-        ticket: 'INT-100-I5', release: RELEASE, objetivo: 'Preservar a busca para acesso completo',
+        ticket: 'INT-100-I5', release: RELEASE_INT_100, objetivo: 'Preservar a busca para acesso completo',
       });
       await bdd.dado('um administrador está autenticado', () =>
         intelligence.autenticarComCredenciais(obterCredenciaisAdministrativas()));
@@ -78,13 +87,48 @@ test.describe('Intelligence UI — acesso permitido', () => {
   );
 
   test(
+    '[INT-100-I6] Retorna para a tela informativa pelo logo do header',
+    { tag: [...TAGS_INT_100, '@int-100', '@viewonly', '@navigation', '@header'] },
+    async ({ page, request }, testInfo) => {
+      const intelligence = new IntelligencePage(page);
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-100-I6', release: RELEASE_INT_100, objetivo: 'Garantir que o logo retorne o view-only para a tela informativa',
+      });
+      const credenciais = await bdd.dado('existe uma conta com perfil somente leitura', () =>
+        obterCredenciaisParaPerfilIntelligence(request, 'view-only'));
+      await bdd.e('essa conta está autenticada', () => intelligence.autenticarComCredenciais(credenciais));
+      await bdd.e('essa conta acessou as configurações pelo header', () => intelligence.abrirConfiguracoesPeloHeader());
+      await bdd.quando('seleciona o logo da aplicação', () => intelligence.abrirTelaViewOnlyPeloLogo());
+      await bdd.entao('a aplicação retorna para a tela informativa do modo somente leitura', () =>
+        intelligence.validarTelaViewOnly());
+    },
+  );
+
+  test(
+    '[INT-100-I4] Mantém configurações acessíveis no modo somente leitura',
+    { tag: [...TAGS_INT_100, '@int-100', '@viewonly', '@settings'] },
+    async ({ page, request }, testInfo) => {
+      const intelligence = new IntelligencePage(page);
+      const bdd = await criarCenarioBDD(testInfo, {
+        ticket: 'INT-100-I4', release: RELEASE_INT_100, objetivo: 'Preservar configurações e informações de versão para view-only',
+      });
+      const credenciais = await bdd.dado('existe uma conta com perfil somente leitura', () =>
+        obterCredenciaisParaPerfilIntelligence(request, 'view-only'));
+      await bdd.e('essa conta está autenticada', () => intelligence.autenticarComCredenciais(credenciais));
+      await bdd.quando('abre as configurações pelo header', () => intelligence.abrirConfiguracoesPeloHeader());
+      await bdd.entao('tema, idioma, data, hora e versões permanecem disponíveis', () =>
+        intelligence.validarConfiguracoesDisponiveisViewOnly());
+    },
+  );
+
+  test(
     '[INT-100-BASELINE] Abre os detalhes da transação pelo TGUID',
-    { tag: [...TAGS, '@int-100', '@smoke', '@admin', '@deeplink', '@transaction'] },
+    { tag: [...TAGS_INT_100, '@int-100', '@smoke', '@admin', '@deeplink', '@transaction'] },
     async ({ page }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_100_TGUID);
       const bdd = await criarCenarioBDD(testInfo, {
-        ticket: 'INT-100-BASELINE', release: RELEASE, objetivo: 'Resolver o deep-link administrativo por TGUID',
+        ticket: 'INT-100-BASELINE', release: RELEASE_INT_100, objetivo: 'Resolver o deep-link administrativo por TGUID',
       });
       await bdd.dado('um administrador está autenticado', () =>
         intelligence.autenticarComCredenciais(obterCredenciaisAdministrativas()));
@@ -120,37 +164,59 @@ test.describe('Intelligence UI — acesso permitido', () => {
 
   test(
     '[INT-100-I1] Exibe a transação sem controles de escrita',
-    { tag: [...TAGS, '@int-100', '@viewonly', '@readonly', '@transaction'] },
+    { tag: [...TAGS_INT_100, '@int-100', '@viewonly', '@readonly', '@transaction'] },
     async ({ page, request }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const tguid = obterValorObrigatorioDaMassa('TGUID', process.env.INT_100_TGUID);
       const bdd = await criarCenarioBDD(testInfo, {
-        ticket: 'INT-100-I1', release: RELEASE, objetivo: 'Abrir transação em modo somente leitura',
+        ticket: 'INT-100-I1', release: RELEASE_INT_100, objetivo: 'Abrir transação em modo somente leitura',
       });
       const credenciais = await bdd.dado('existe uma conta com perfil somente leitura', () =>
         obterCredenciaisParaPerfilIntelligence(request, 'view-only'));
       await bdd.e('essa conta está autenticada', () => intelligence.autenticarComCredenciais(credenciais));
-      await bdd.quando('abre os detalhes da transação', () => intelligence.abrirDetalhesDaTransacaoPorTguid(tguid));
-      await bdd.entao('nenhum controle de escrita está habilitado', () =>
-        intelligence.validarAusenciaDeControlesDeEscrita());
+      await bdd.quando(
+        'abre os detalhes da transação pelo TGUID',
+        () => intelligence.abrirDetalhesDaTransacaoPorTguid(tguid),
+      );
+
+      await bdd.entao(
+        'a transação solicitada é carregada',
+        () => intelligence.validarDetalhesDaTransacaoCarregados(tguid),
+      );
+
+      await bdd.e(
+        'os controles proibidos para view-only não são exibidos',
+        () => intelligence.validarAusenciaDeControlesDeEscrita(),
+      );
     },
   );
 
   test(
     '[INT-100-I2] Exibe o perfil sem controles de escrita',
-    { tag: [...TAGS, '@int-100', '@viewonly', '@readonly', '@profile'] },
+    { tag: [...TAGS_INT_100, '@int-100', '@viewonly', '@readonly', '@profile'] },
     async ({ page, request }, testInfo) => {
       const intelligence = new IntelligencePage(page);
       const pguid = obterValorObrigatorioDaMassa('PGUID', process.env.INT_100_PGUID);
       const bdd = await criarCenarioBDD(testInfo, {
-        ticket: 'INT-100-I2', release: RELEASE, objetivo: 'Abrir perfil em modo somente leitura',
+        ticket: 'INT-100-I2', release: RELEASE_INT_100, objetivo: 'Abrir perfil em modo somente leitura',
       });
       const credenciais = await bdd.dado('existe uma conta com perfil somente leitura', () =>
         obterCredenciaisParaPerfilIntelligence(request, 'view-only'));
       await bdd.e('essa conta está autenticada', () => intelligence.autenticarComCredenciais(credenciais));
-      await bdd.quando('abre os detalhes do perfil', () => intelligence.abrirDetalhesDoPerfilPorPguid(pguid));
-      await bdd.entao('nenhum controle de escrita está habilitado', () =>
-        intelligence.validarAusenciaDeControlesDeEscrita());
+      await bdd.quando(
+        'abre os detalhes do perfil pelo PGUID',
+        () => intelligence.abrirDetalhesDoPerfilPorPguid(pguid),
+      );
+
+      await bdd.entao(
+        'o perfil solicitado é carregado',
+        () => intelligence.validarDetalhesDoPerfilCarregados(pguid),
+      );
+
+      await bdd.e(
+        'os controles proibidos para view-only não são exibidos',
+        () => intelligence.validarAusenciaDeControlesDeEscrita(),
+      );
     },
   );
 

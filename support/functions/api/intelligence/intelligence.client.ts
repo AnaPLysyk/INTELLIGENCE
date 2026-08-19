@@ -237,6 +237,14 @@ export async function obterDetalhesTransacaoIntelligence(
   );
 }
 
+export async function obterDetalhesPerfilIntelligence(
+  request: APIRequestContext,
+  pguid: string,
+  sessionGuid?: string,
+): Promise<RespostaApiIntelligence> {
+  return obterJson(request, `/profile/person/${encodeURIComponent(pguid)}`, sessionGuid);
+}
+
 export function payloadDaMassa(entrada: EntradaMassaBusca): PayloadBuscaIntelligence {
   if (!entrada.kind) {
     throw new Error(`AUTOMATION ERROR: a massa de ${entrada.seletor} nao informa o kind da API.`);

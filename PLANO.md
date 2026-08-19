@@ -43,7 +43,7 @@ ID externo e CIB também são bloqueados individualmente se não estiverem pesqu
 | `INT-23` | `/fields/list` fornece os campos configurados exibidos pela interface | `API-POS-FIELDS-01`, `UI-POS-FIELDS-01`, `API-NEG-FIELDS-AUTH-01/02` |
 | `INT-95` e `INT-97` | External ID e `relatedExternalIds` continuam pesquisáveis após tratamento | `API-POS-EXTERNAL-01` — exige massa produzida pelo fluxo Trust |
 | `INT-98` | configuração de chave externa não duplica nem torna ambígua a opção visual | `UI-POS-FIELDS-01`, `API-POS-EXTERNAL-01` |
-| `INT-100` | acesso completo, somente leitura e negação de acesso por URL | `INT-100-I1`, `INT-100-I2`, `INT-100-R3`, `INT-100-I5`, `INT-100-I8`, `INT-100-BASELINE`, `API-NEG-COMMON-06` |
+| `INT-100` | acesso completo, somente leitura e negação de acesso por URL | `INT-100-I1`, `INT-100-I2`, `INT-100-I3`, `INT-100-I4`, `INT-100-I5`, `INT-100-I6`, `INT-100-I7`, `INT-100-R3`, `INT-100-BASELINE`, `API-NEG-COMMON-06`, `API-POS-PROFILE-VIEWONLY-01`, `API-NEG-PROFILE-NOTFOUND-01`, `INT-100-WRITE-ENDPOINTS-01` (bloqueado — contrato dos endpoints de escrita nao documentado) |
 | Análise de risco da busca | payload obrigatório, entrada vazia e vetores hostis não podem expor perfis ou derrubar a API | `API-NEG-PAYLOAD-*-01`, `API-DES-*-01`, `UI-NEG-EMPTY-01`, `UI-DES-XSS-01` |
 | Regra de fonte somente leitura | SMART/BD fornece massa, mas a automação nunca pode escrever | `BD-POS-CONNECTION-01`, `BD-POS-MASSA-01`, `BD-DES-*-01` |
 

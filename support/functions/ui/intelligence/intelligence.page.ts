@@ -11,15 +11,15 @@ type ControleEdicao = {
   readOnly: boolean;
 };
 
-const ROTULOS_DE_ESCRITA = [
+const ROTULOS_BLOQUEADOS_VIEW_ONLY = [
   /editar/i,
   /salvar/i,
   /excluir/i,
   /tratar/i,
-  /exportar/i,
   /enviar/i,
   /confirmar/i,
   /ver nova transa[cç][aã]o/i,
+  /voltar/i,
 ];
 
 function normalizarTexto(valor: string): string {
@@ -54,6 +54,54 @@ export class IntelligencePage {
     ).toBe(true);
   }
 
+  async validarAutenticacaoNegadaComCredenciais(
+    credenciais: CredenciaisIntelligence,
+  ): Promise<void> {
+    await this.page.goto(
+      `${this.obterUrlBase()}/`,
+      { waitUntil: 'domcontentloaded' },
+    );
+
+    const usuario =
+      this.page.locator('input[name="username"]');
+
+    await expect(usuario).toBeVisible({
+      timeout: 30_000,
+    });
+
+    await usuario.fill(credenciais.usuario);
+
+    await this.page
+      .locator('input[name="password"]')
+      .fill(credenciais.senha);
+
+    await this.page
+      .getByRole('button', { name: /acessar/i })
+      .click();
+
+    await expect(
+      usuario,
+      'Uma conta sem permissao do Intelligence deve permanecer na autenticacao.',
+    ).toBeVisible({ timeout: 30_000 });
+
+    await expect.poll(
+      () =>
+        this.page.evaluate(
+          () =>
+            Boolean(
+              localStorage.getItem(
+                '@GRIAULE:session'
+              )
+            )
+        ),
+      {
+        message:
+          'Uma conta sem permissao nao deve criar sessao no Intelligence.',
+        timeout: 30_000,
+      },
+    ).toBe(false);
+  }
+
   async validarBuscaDisponivel(): Promise<void> {
     await expect(this.page.locator('select').first(), 'A busca deve exibir o seletor Chave.')
       .toBeEnabled({ timeout: 30_000 });
@@ -78,6 +126,394 @@ export class IntelligencePage {
       && await seletor.isEnabled().catch(() => false)
       && await pesquisar.isEnabled().catch(() => false);
     expect(disponivel, 'O perfil somente leitura nao deve conseguir usar a busca.').toBe(false);
+  }
+
+  async validarTelaViewOnly(): Promise<void> {
+    await expect(
+      this.page.getByText(/a busca n[aã]o est[aá] dispon[ií]vel para o seu usu[aá]rio/i).first(),
+      'O perfil view-only deve visualizar o aviso de busca indisponivel.',
+    ).toBeVisible({ timeout: 30_000 });
+
+    await expect(
+      this.page.getByText(/acesse transa[cç][oõ]es e perfis diretamente pela url/i).first(),
+      'O aviso deve orientar o acesso direto por URL.',
+    ).toBeVisible({ timeout: 30_000 });
+
+    await this.validarBuscaIndisponivel();
+  }
+
+  async abrirRotaBusca(): Promise<void> {
+    await this.page.goto(
+      `${this.obterUrlBase()}/search`,
+      { waitUntil: 'domcontentloaded' },
+    );
+  }
+
+  async abrirRotaBuscaComParametros(
+    chave: string,
+    valor: string,
+    kind = 'UUID',
+  ): Promise<void> {
+    const query = new URLSearchParams({
+      first: '0',
+      limit: '20',
+      key: chave,
+      value: valor,
+      kind,
+    });
+
+    await this.page.goto(
+      `${this.obterUrlBase()}/search?${query.toString()}`,
+      { waitUntil: 'domcontentloaded' },
+    );
+  }
+
+  async instalarMonitorBuscaTransitoriaViewOnly(): Promise<void> {
+    const instalar = () => {
+      type EventoBusca = {
+        origem: string;
+        url: string;
+        selectVisivel: boolean;
+        inputVisivel: boolean;
+        pesquisarVisivel: boolean;
+        timestamp: number;
+      };
+
+      type EstadoInt100 = Window & {
+        __int100SearchFlashEvents?: EventoBusca[];
+        __int100SearchFlashMonitorInstalled?: boolean;
+      };
+
+      const estado =
+        window as EstadoInt100;
+
+      estado.__int100SearchFlashEvents = [];
+
+      if (
+        estado.__int100SearchFlashMonitorInstalled
+      ) {
+        return;
+      }
+
+      estado.__int100SearchFlashMonitorInstalled =
+        true;
+
+      const visivel = (
+        elemento: Element | null,
+      ): boolean => {
+        if (!elemento) {
+          return false;
+        }
+
+        const style =
+          window.getComputedStyle(elemento);
+
+        const rect =
+          elemento.getBoundingClientRect();
+
+        return (
+          style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && Number(style.opacity || '1') > 0
+          && rect.width > 0
+          && rect.height > 0
+        );
+      };
+
+      let ultimoEstado = false;
+
+      const verificar = (
+        origem: string,
+      ): void => {
+        const select =
+          document.querySelector(
+            'select[name="searchKey"]',
+          );
+
+        const input =
+          document.querySelector(
+            'input[name="searchValue"]',
+          );
+
+        const pesquisar =
+          Array.from(
+            document.querySelectorAll('button'),
+          ).find((button) =>
+            /pesquisar/i.test(
+              (button.textContent || '').trim(),
+            )
+          ) || null;
+
+        const buscaVisivel =
+          visivel(select)
+          || visivel(input)
+          || visivel(pesquisar);
+
+        if (
+          buscaVisivel
+          && !ultimoEstado
+        ) {
+          estado
+            .__int100SearchFlashEvents
+            ?.push({
+              origem,
+              url:
+                window.location.pathname
+                + window.location.search,
+              selectVisivel:
+                visivel(select),
+              inputVisivel:
+                visivel(input),
+              pesquisarVisivel:
+                visivel(pesquisar),
+              timestamp:
+                performance.now(),
+            });
+        }
+
+        ultimoEstado =
+          buscaVisivel;
+      };
+
+      const iniciar = (): void => {
+        verificar('inicio');
+
+        const observer =
+          new MutationObserver(() => {
+            verificar('mutation');
+          });
+
+        observer.observe(
+          document.documentElement,
+          {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: [
+              'class',
+              'style',
+              'hidden',
+            ],
+          },
+        );
+
+        let frames = 0;
+
+        const frame = (): void => {
+          verificar('raf');
+
+          frames += 1;
+
+          if (frames < 600) {
+            requestAnimationFrame(frame);
+          }
+        };
+
+        requestAnimationFrame(frame);
+      };
+
+      if (
+        document.readyState === 'loading'
+      ) {
+        document.addEventListener(
+          'DOMContentLoaded',
+          iniciar,
+          { once: true },
+        );
+      } else {
+        iniciar();
+      }
+    };
+
+    await this.page.addInitScript(instalar);
+    await this.page.evaluate(instalar);
+  }
+
+  async limparEventosBuscaTransitoriaViewOnly(): Promise<void> {
+    await this.page.evaluate(() => {
+      const estado =
+        window as Window & {
+          __int100SearchFlashEvents?: unknown[];
+        };
+
+      estado.__int100SearchFlashEvents = [];
+    });
+  }
+
+  async validarAusenciaDeFlashDaBusca(
+    contexto: string,
+  ): Promise<void> {
+    const eventos =
+      await this.page.evaluate(() => {
+        const estado =
+          window as Window & {
+            __int100SearchFlashEvents?: unknown[];
+          };
+
+        return (
+          estado.__int100SearchFlashEvents || []
+        );
+      });
+
+    expect(
+      eventos,
+      `A busca nao pode ficar visivel transitoriamente durante ${contexto}. Eventos: ${JSON.stringify(eventos)}`,
+    ).toHaveLength(0);
+  }
+
+  async abrirPaginaNaoEncontrada(): Promise<void> {
+    const rota =
+      `rota-int-100-inexistente-${Date.now()}`;
+
+    await this.page.goto(
+      `${this.obterUrlBase()}/${rota}`,
+      { waitUntil: 'domcontentloaded' },
+    );
+
+    await expect(
+      this.page.getByText(/p[aá]gina n[aã]o encontrada/i).first(),
+      'Uma rota inexistente deve apresentar a pagina de recurso nao encontrado.',
+    ).toBeVisible({ timeout: 30_000 });
+
+    await expect(
+      this.page.getByRole('button', { name: /^voltar$/i }),
+      'A pagina 404 deve apresentar o botao Voltar.',
+    ).toBeVisible({ timeout: 30_000 });
+  }
+
+  async voltarDaPaginaNaoEncontrada(): Promise<void> {
+    const voltar =
+      this.page.getByRole(
+        'button',
+        { name: /^voltar$/i },
+      );
+
+    await expect(
+      voltar,
+      'O botao Voltar deve estar disponivel na pagina 404.',
+    ).toBeVisible({ timeout: 30_000 });
+
+    await voltar.click();
+
+    await expect(
+      this.page,
+      'O view-only deve retornar para a tela informativa ao sair da pagina 404.',
+    ).toHaveURL(/\/view-only$/, { timeout: 30_000 });
+  }
+
+  async abrirTelaViewOnlyPeloLogo(): Promise<void> {
+    const logo = this.page
+      .locator('[class*="Header_brand"]')
+      .first();
+
+    await expect(
+      logo,
+      'O logo do header deve permanecer disponível para view-only.',
+    ).toBeVisible({ timeout: 30_000 });
+
+    await logo.click();
+
+    await expect(
+      this.page,
+      'O logo deve retornar o view-only para a tela informativa.',
+    ).toHaveURL(/\/view-only$/, { timeout: 30_000 });
+
+    await this.validarTelaViewOnly();
+  }
+
+  async abrirConfiguracoesPeloHeader(): Promise<void> {
+    const configuracoes = this.page
+      .locator('[class*="LogOptions_icon"]')
+      .first();
+
+    await expect(
+      configuracoes,
+      'O header deve manter o acesso às configurações para view-only.',
+    ).toBeVisible({ timeout: 30_000 });
+
+    await configuracoes.click();
+
+    await expect(
+      this.page,
+      'O acesso às configurações deve navegar para /settings.',
+    ).toHaveURL(/\/settings$/, { timeout: 30_000 });
+  }
+
+  async validarConfiguracoesDisponiveisViewOnly(): Promise<void> {
+    await expect(
+      this.page.getByText(/configura[cç][oõ]es/i).first(),
+      'A tela de configurações deve ser exibida.',
+    ).toBeVisible({ timeout: 30_000 });
+
+    await expect(
+      this.page.getByText(/^tema$/i).first(),
+      'A configuração de tema deve permanecer disponível.',
+    ).toBeVisible();
+
+    const tema = this.page
+      .locator('[class*="ButtonToggleTheme"] input[type="checkbox"]')
+      .first();
+
+    await expect(
+      tema,
+      'O controle de tema deve permanecer habilitado.',
+    ).toBeEnabled();
+
+    const idioma =
+      this.page.locator('select[name="languageSelect"]');
+
+    await expect(
+      idioma,
+      'O seletor de idioma deve permanecer disponível.',
+    ).toBeEnabled();
+
+    await expect(
+      idioma.locator('option'),
+      'O seletor de idioma deve possuir opções.',
+    ).not.toHaveCount(0);
+
+    const data =
+      this.page.locator('select[name="dateFormatSelect"]');
+
+    await expect(
+      data,
+      'O formato de data deve permanecer disponível.',
+    ).toBeEnabled();
+
+    const hora =
+      this.page.locator('select[name="timeFormatSelect"]');
+
+    await expect(
+      hora,
+      'O formato de hora deve permanecer disponível.',
+    ).toBeEnabled();
+
+    await expect(
+      this.page.getByText(/vers[oõ]es/i).first(),
+      'A seção de versões deve permanecer disponível.',
+    ).toBeVisible();
+
+    const corpo = this.page.locator('body');
+
+    await expect(
+      corpo,
+      'A versão do Intelligence Web deve ser apresentada.',
+    ).toContainText(/GBS Intelligence Web/i);
+
+    await expect(
+      corpo,
+      'A versão do Intelligence Server deve ser apresentada.',
+    ).toContainText(/GBS Intelligence Server/i);
+
+    await expect(
+      corpo,
+      'A versão do Common Server deve ser apresentada.',
+    ).toContainText(/GBS Common Server/i);
+
+    await expect(
+      corpo,
+      'A versão do React Griaule UI deve ser apresentada.',
+    ).toContainText(/React Griaule UI/i);
   }
 
   async abrirDetalhesDaTransacaoPorTguid(tguid: string): Promise<void> {
@@ -128,21 +564,67 @@ export class IntelligencePage {
   async abrirDetalhesDoPerfilPorPguid(pguid: string): Promise<void> {
     const template = process.env.INTELLIGENCE_PERFIL_URL_TEMPLATE?.trim()
       || process.env.INT_100_PERFIL_URL_TEMPLATE?.trim()
-      || '{base}/profile/{pguid}';
+      || '{base}/person/{pguid}';
     const url = template
       .replace('{base}', this.obterUrlBase())
       .replace('{pguid}', encodeURIComponent(pguid));
     await this.page.goto(url, { waitUntil: 'domcontentloaded' });
   }
 
+  async validarDetalhesDoPerfilCarregados(
+    pguid: string,
+  ): Promise<void> {
+    await expect.poll(
+      () => decodeURIComponent(this.page.url()),
+      {
+        message:
+          'A URL deve permanecer no perfil solicitado pelo PGUID.',
+        timeout: 30_000,
+      },
+    ).toContain(`/person/${pguid}`);
+
+    const corpo = this.page.locator('body');
+
+    await expect(
+      corpo,
+      'O perfil solicitado não deve cair em página inexistente ou resultado ausente.',
+    ).not.toContainText(
+      /p[aá]gina n[aã]o encontrada|nenhum resultado encontrado/i,
+      { timeout: 30_000 },
+    );
+
+    await expect(
+      corpo,
+      'A tela deve apresentar conteúdo de perfil.',
+    ).toContainText(
+      /perfil|dados biogr[aá]ficos/i,
+      { timeout: 30_000 },
+    );
+  }
+
   async validarAusenciaDeControlesDeEscrita(): Promise<void> {
-    for (const rotulo of ROTULOS_DE_ESCRITA) {
-      const controle = this.page.getByRole('button', { name: rotulo });
-      if (await controle.count() > 0) {
+    for (const rotulo of ROTULOS_BLOQUEADOS_VIEW_ONLY) {
+      const controles =
+        this.page.getByRole(
+          'button',
+          { name: rotulo }
+        );
+
+      const quantidade =
+        await controles.count();
+
+      for (
+        let indice = 0;
+        indice < quantidade;
+        indice += 1
+      ) {
         expect(
-          await controle.first().isDisabled().catch(() => true),
-          `O controle de escrita ${rotulo} deve estar desabilitado.`,
-        ).toBe(true);
+          await controles
+            .nth(indice)
+            .isVisible()
+            .catch(() => false),
+          `O controle ${rotulo} não deve ser exibido para view-only.`,
+        ).toBe(false);
       }
     }
   }

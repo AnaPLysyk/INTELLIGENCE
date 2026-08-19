@@ -54,9 +54,12 @@ async function classificar(request: APIRequestContext, item: Candidato): Promise
 }
 
 function corresponde(perfil: PerfilIntelligence, claims: Set<string>): boolean {
+  const viewOnly = claims.has('intelligence_view_only');
   const acesso = claims.has('intelligence_user');
-  const busca = claims.has('intelligence_list_regular');
-  return perfil === 'view-only' ? acesso && !busca : !acesso;
+
+  return perfil === 'view-only'
+    ? viewOnly
+    : !viewOnly && !acesso;
 }
 
 export async function obterCredenciaisParaPerfilIntelligence(
@@ -70,9 +73,10 @@ export async function obterCredenciaisParaPerfilIntelligence(
       avaliados.push(`${item.origem}=nao-autenticou`);
       continue;
     }
+    const viewOnly = classificado.claims.has('intelligence_view_only');
     const acesso = classificado.claims.has('intelligence_user');
     const busca = classificado.claims.has('intelligence_list_regular');
-    avaliados.push(`${item.origem}=acesso:${acesso},busca:${busca}`);
+    avaliados.push(`${item.origem}=viewOnly:${viewOnly},acesso:${acesso},busca:${busca}`);
     if (corresponde(perfil, classificado.claims)) {
       return { usuario: classificado.usuario, senha: classificado.senha };
     }
