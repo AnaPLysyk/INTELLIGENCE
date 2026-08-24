@@ -33,10 +33,10 @@ for (const arquivo of arquivos) {
 
 const features = relativos.filter((arquivo) => arquivo.startsWith('features/') && arquivo.endsWith('.feature'));
 const featurePattern = /^features\/intelligence\/(api|ui|bd)\/.+\.feature$/;
-const pastasProibidas = /\/(regressao|regression|smoke|release|releases|permissoes|permissions|tickets?)\//i;
+const pastasFeatureProibidas = /\/(regressao|regression|smoke|release|releases|permissoes|permissions|tickets?)\//i;
 for (const feature of features) {
   if (!featurePattern.test(feature)) errors.push(`feature fora da arquitetura por camada: ${feature}`);
-  if (pastasProibidas.test(feature)) errors.push(`feature usa metadado como diretorio: ${feature}`);
+  if (pastasFeatureProibidas.test(feature)) errors.push(`feature usa metadado como diretorio: ${feature}`);
 
   const camada = feature.split('/')[2];
   const conteudo = fs.readFileSync(path.join(root, feature), 'utf8');
@@ -45,8 +45,12 @@ for (const feature of features) {
 if (!features.length) errors.push('nenhuma Feature encontrada em features/intelligence/{api,ui,bd}');
 
 const steps = relativos.filter((arquivo) => arquivo.startsWith('steps/') && arquivo.endsWith('.steps.ts'));
-const stepPattern = /^steps\/intelligence\/(common\/.+|(?:api|ui|bd)\/(?:positivo|negativo)\/.+)\.steps\.ts$/;
-for (const step of steps) if (!stepPattern.test(step)) errors.push(`step fora da arquitetura: ${step}`);
+const stepPattern = /^steps\/intelligence\/(common\/.+|(?:api|ui|bd)\/.+)\.steps\.ts$/;
+const pastasStepProibidas = /\/steps\/intelligence\/(?:api|ui|bd)\/(?:positivo|negativo)\//i;
+for (const step of steps) {
+  if (!stepPattern.test(step)) errors.push(`step fora da arquitetura: ${step}`);
+  if (pastasStepProibidas.test(`/${step}`)) errors.push(`step usa positivo/negativo como diretorio: ${step}`);
+}
 if (!steps.length) errors.push('nenhum Step Definition TypeScript encontrado');
 
 const plan = JSON.parse(fs.readFileSync(path.join(root, 'automation.plan.json'), 'utf8'));
@@ -59,4 +63,4 @@ if (errors.length) {
   console.error(errors.map((erro) => `- ${erro}`).join('\n'));
   process.exit(1);
 }
-console.log(`Estrutura valida: ${features.length} Features por camada/dominio e ${steps.length} arquivos de Steps; sem residuos legados.`);
+console.log(`Estrutura valida: ${features.length} Features por camada/dominio e ${steps.length} arquivos de Steps; sem residuos legados ou pastas positivo/negativo.`);
