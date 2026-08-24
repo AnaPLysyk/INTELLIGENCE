@@ -11,12 +11,12 @@ Funcionalidade: Tabela Process como fonte de massa
     Então o contrato automatizado deve ser atendido
 
     @positive @regression @release-5.5.0.5062 @int-17
-    Exemplos: Sucesso ao localizar processos para geração de massa
+    Exemplos: Seleção de processos como massa de teste
       | id              |
       | BD-POS-MASSA-01 |
 
     @negative @regression @destructive @security @release-5.5.0.5062
-    Exemplos: Proteção contra operações de escrita em banco de teste
+    Exemplos: Bloqueio de INSERT, UPDATE, DELETE e stacked queries
       | id                |
       | BD-DES-INSERT-01  |
       | BD-DES-UPDATE-01  |

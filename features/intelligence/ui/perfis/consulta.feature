@@ -11,21 +11,21 @@ Funcionalidade: Visualização de perfil
     Então o contrato automatizado deve ser atendido
 
     @positive @regression @release-5.5.0.5062 @int-17 @admin @permission-intelligence_user
-    Exemplos: Acesso a perfil vinculado por PGUID
+    Exemplos: Abertura de perfil por deep-link com PGUID válido
       | id              |
       | INT-17-PGUID-UI |
 
     @positive @regression @release-5.5.0.5062 @int-24 @introduced-in-2.0.0 @admin
-    Exemplos: Navegação no histórico de perfis
+    Exemplos: Navegação entre perfis no histórico de visualizações
       | id           |
       | INT-24-UI-01 |
 
     @positive @acceptance @regression @int-100 @case-INT-100-I2 @release-unassigned @viewonly @permission-intelligence_view_only @readonly
-    Exemplos: Perfil carregado em modo somente leitura
+    Exemplos: Apresentação de perfil em modo somente leitura
       | id         |
       | INT-100-I2 |
 
     @negative @acceptance @regression @int-100 @case-INT-100-I3 @release-unassigned @viewonly @permission-intelligence_view_only @not-found @hardening
-    Exemplos: Mensagem de erro para PGUID inexistente
+    Exemplos: Tratamento de erro para PGUID não encontrado
       | id         |
       | INT-100-I3 |

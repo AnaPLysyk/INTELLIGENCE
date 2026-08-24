@@ -11,7 +11,7 @@ Funcionalidade: Busca de perfis pela API
     Então o contrato automatizado deve ser atendido
 
     @positive @regression @release-5.5.0.5062 @admin @permission-intelligence_user @permission-intelligence_list_regular
-    Exemplos: Sucesso em busca por diferentes critérios
+    Exemplos: Retorno de resultados para busca por diversos critérios
       | id                    |
       | API-POS-EXTERNAL-01   |
       | API-POS-BIRTHDATE-01  |
@@ -20,12 +20,12 @@ Funcionalidade: Busca de perfis pela API
       | API-POS-PAGINATION-01 |
 
     @positive @regression @smoke @release-5.5.0.5062 @admin @permission-intelligence_user @permission-intelligence_list_regular
-    Exemplos: Smoke - Busca rápida por CPF
+    Exemplos: Sucesso em busca rápida por CPF
       | id             |
       | API-POS-CPF-01 |
 
     @negative @regression @release-5.5.0.5062 @admin @permission-intelligence_user @permission-intelligence_list_regular
-    Exemplos: Rejeição de critérios inválidos e resultados vazios
+    Exemplos: Rejeição de busca com critério inválido
       | id                       |
       | API-NEG-NOTFOUND-01      |
       | API-NEG-PAYLOAD-NAME-01  |
@@ -34,13 +34,13 @@ Funcionalidade: Busca de perfis pela API
       | API-NEG-PAGINATION-01    |
 
     @negative @regression @smoke @release-5.5.0.5062
-    Exemplos: Proteção contra sessão inválida ou ausente
+    Exemplos: Bloqueio de busca sem sessão autenticada
       | id                |
       | API-NEG-COMMON-04 |
       | API-NEG-COMMON-05 |
 
     @negative @regression @destructive @security @release-5.5.0.5062 @admin @permission-intelligence_user @permission-intelligence_list_regular
-    Exemplos: Proteção contra injeção SQL, XSS e payloads maliciosos
+    Exemplos: Bloqueio de injeção SQL, XSS e payloads hostis
       | id                  |
       | API-DES-SQLI-01     |
       | API-DES-XSS-01      |
@@ -48,6 +48,6 @@ Funcionalidade: Busca de perfis pela API
       | API-DES-OVERSIZE-01 |
 
     @negative @acceptance @regression @int-100 @case-API-NEG-COMMON-06 @release-unassigned @viewonly @permission-intelligence_view_only
-    Exemplos: Busca desabilitada para perfil view-only
+    Exemplos: Negação de busca para usuário view-only
       | id                |
       | API-NEG-COMMON-06 |

@@ -11,7 +11,7 @@ Funcionalidade: Sessão da API do Intelligence
     Então o contrato automatizado deve ser atendido
 
     @negative @regression @release-5.5.0.5062
-    Exemplos: Rejeição de credenciais inválidas
+    Exemplos: Negação de acesso com credenciais inválidas
       | id               |
       | API-NEG-LOGIN-01 |
       | API-NEG-LOGIN-02 |

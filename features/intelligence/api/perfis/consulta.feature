@@ -11,11 +11,11 @@ Funcionalidade: Consulta direta de perfil
     Então o contrato automatizado deve ser atendido
 
     @positive @acceptance @regression @int-100 @case-API-POS-PROFILE-VIEWONLY-01 @release-unassigned @viewonly @permission-intelligence_view_only
-    Exemplos: Sucesso ao consultar perfil com permissão view-only
+    Exemplos: Consulta de perfil com sucesso em modo view-only
       | id                          |
       | API-POS-PROFILE-VIEWONLY-01 |
 
     @negative @acceptance @regression @int-100 @case-API-NEG-PROFILE-NOTFOUND-01 @release-unassigned @viewonly @permission-intelligence_view_only @not-found
-    Exemplos: Erro 404 para PGUID não encontrado
+    Exemplos: Retorno de erro para PGUID inexistente no sistema
       | id                          |
       | API-NEG-PROFILE-NOTFOUND-01 |
