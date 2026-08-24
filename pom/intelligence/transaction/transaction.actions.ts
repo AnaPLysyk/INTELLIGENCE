@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { IntelligencePage } from '../../../support/functions/ui/intelligence/intelligence.page';
+import { IntelligencePage } from '../core/intelligence.page';
 
 export class TransactionActions {
   private readonly pageObject: IntelligencePage;
