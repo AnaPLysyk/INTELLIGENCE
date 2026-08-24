@@ -10,9 +10,9 @@
     "release": "npm run test:release",
     "scheduled": "npm run test:scheduled",
     "porTicket": "node scripts/run-by-ticket.cjs",
-    "test100Admin": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@acceptance and @int-100 and @admin\"",
-    "test100ViewOnly": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@acceptance and @int-100 and @viewonly\"",
-    "test100NoAccess": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@acceptance and @int-100 and @no-access\""
+    "test100Admin": "npm run test:int100:admin",
+    "test100ViewOnly": "npm run test:int100:viewonly",
+    "test100NoAccess": "npm run test:int100:noaccess"
   },
   "plan": "automation.plan.json",
   "runtime": { "preferred": "host", "fallback": "host" },
