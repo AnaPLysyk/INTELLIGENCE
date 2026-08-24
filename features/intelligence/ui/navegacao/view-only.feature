@@ -11,11 +11,11 @@ Funcionalidade: Navegação do modo somente leitura
     Então o contrato automatizado deve ser atendido
 
     @acceptance @regression @int-100 @case-INT-100-I7 @release-unassigned @not-found
-    Exemplos: Retorno da página 404
+    Exemplos: Redirecionamento de 404 para tela inicial
       | id         |
       | INT-100-I7 |
 
     @acceptance @regression @int-100 @case-INT-100-I6 @release-unassigned @header
-    Exemplos: Retorno pelo logo da aplicação
+    Exemplos: Navegação para home pelo clique no logo
       | id         |
       | INT-100-I6 |

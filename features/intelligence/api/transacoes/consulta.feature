@@ -11,16 +11,16 @@ Funcionalidade: Consulta de transação pela API
     Então o contrato automatizado deve ser atendido
 
     @positive @regression @release-5.5.0.5062 @int-17 @admin @permission-intelligence_user
-    Exemplos: TGUID conhecido
+    Exemplos: Sucesso ao consultar transação por TGUID válido
       | id               |
       | API-POS-TGUID-01 |
 
     @negative @regression @release-5.5.0.5062 @int-17
-    Exemplos: Consulta sem sessão
+    Exemplos: Rejeição de consulta sem sessão autenticada
       | id                          |
       | API-NEG-TRANSACTION-AUTH-01 |
 
     @negative @regression @release-5.5.0.5062 @admin @permission-intelligence_user
-    Exemplos: TGUID malformado
+    Exemplos: Rejeição de TGUID em formato inválido
       | id               |
       | API-NEG-TGUID-01 |

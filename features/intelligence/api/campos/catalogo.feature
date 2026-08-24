@@ -11,12 +11,12 @@ Funcionalidade: Catálogo de campos pesquisáveis
     Então o contrato automatizado deve ser atendido
 
     @positive @regression @release-5.5.0.5062 @int-23 @admin @permission-intelligence_user
-    Exemplos: Catálogo disponível
+    Exemplos: Catálogo de campos carregado com sucesso
       | id                |
       | API-POS-FIELDS-01 |
 
     @negative @regression @release-5.5.0.5062 @int-23
-    Exemplos: Catálogo protegido
+    Exemplos: Proteção de catálogo contra acesso não autenticado
       | id                     |
       | API-NEG-FIELDS-AUTH-01 |
       | API-NEG-FIELDS-AUTH-02 |
