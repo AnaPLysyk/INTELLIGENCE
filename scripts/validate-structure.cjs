@@ -59,6 +59,20 @@ for (const step of steps) {
 }
 if (!steps.length) errors.push('nenhum Step Definition TypeScript encontrado');
 
+const manifest = JSON.parse(fs.readFileSync(path.join(root, 'qa.project.json'), 'utf8'));
+if (manifest.ranger) errors.push('schema Ranger invalido: use rangerBaseline, rangerProfiles e rangerSuites no topo do qa.project.json');
+if (!manifest.rangerBaseline) errors.push('rangerBaseline ausente no qa.project.json');
+for (const perfil of ['int100AdminFull', 'int100ViewOnly', 'int100NoAccess']) {
+  if (!manifest.rangerProfiles?.[perfil]) errors.push(`Ranger profile ausente: ${perfil}`);
+}
+const fasesInt100 = manifest.rangerSuites?.int100Full?.phases;
+if (!Array.isArray(fasesInt100) || fasesInt100.length !== 3) {
+  errors.push('rangerSuites.int100Full precisa declarar exatamente 3 fases');
+}
+for (const capability of ['test100Admin', 'test100ViewOnly', 'test100NoAccess']) {
+  if (!manifest.commands?.[capability]) errors.push(`capability Ranger ausente em commands: ${capability}`);
+}
+
 const plan = JSON.parse(fs.readFileSync(path.join(root, 'automation.plan.json'), 'utf8'));
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/automation.yml'), 'utf8');
 for (const [name, suite] of Object.entries(plan.suites)) {
@@ -72,5 +86,5 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(
-  `Estrutura valida: ${features.length} Features e ${steps.length} arquivos de Steps organizados por responsabilidade; sem residuos legados.`,
+  `Estrutura valida: ${features.length} Features e ${steps.length} arquivos de Steps organizados por responsabilidade; Ranger INT-100 preservado; sem residuos legados.`,
 );
