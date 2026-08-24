@@ -10,22 +10,16 @@ As Features representam o comportamento por camada/domínio. Os Steps representa
 steps/intelligence/
 ├── api/
 │   ├── autenticar/
-│   │   └── sessao.steps.ts
 │   ├── buscar/
-│   │   └── perfis.steps.ts
 │   ├── consultar/
-│   │   ├── campos.steps.ts
-│   │   ├── perfis.steps.ts
-│   │   └── transacoes.steps.ts
 │   └── escrever/
-│       └── perfis.steps.ts
 ├── ui/
-│   ├── autenticacao/acesso.steps.ts
-│   ├── busca/pesquisa.steps.ts
-│   ├── configuracoes/preferencias.steps.ts
-│   ├── navegacao/view-only.steps.ts
-│   ├── perfis/{consulta,edicao}.steps.ts
-│   └── transacoes/{detalhes,edicao,exportacao}.steps.ts
+│   ├── autenticacao/
+│   ├── busca/
+│   ├── configuracoes/
+│   ├── navegacao/
+│   ├── perfis/
+│   └── transacoes/
 ├── bd/
 │   └── smart/
 │       ├── conexao.steps.ts
@@ -41,20 +35,51 @@ Regra de leitura:
 - BD: **banco → tabela** (`smart/tabelas/process`).
 - `@positive`, `@negative`, `@regression`, `@smoke`, release, ticket e permissão são tags; não são diretórios.
 
-Features seguem o domínio da aplicação:
+## POM e Utils
 
-```text
-features/intelligence/
-├── api/
-├── ui/
-└── bd/
-```
+O POM é a camada visual reutilizável. Cada área deve manter `*.actions.ts` para ações/asserções de UI e `*.locators.ts` para elementos da tela.
+
+`utils/` contém implementação não visual: clientes e contratos de API, autenticação, banco, massa e integrações. Os testes em `steps/` chamam POM ou Utils; não duplicam essas funções.
 
 Fluxo principal:
 
 ```text
 FEATURE -> STEP -> POM   (UI)
                 -> UTILS (API/BD/AUTH/DATA)
+```
+
+## Como executar
+
+Por Feature:
+
+```powershell
+npm run test:feature -- features/intelligence/ui/perfis/consulta.feature
+```
+
+Por arquivo de Steps:
+
+```powershell
+npm run test:steps -- steps/intelligence/api/consultar/perfis.steps.ts
+```
+
+Por caso:
+
+```powershell
+npm run test:case -- API-POS-PROFILE-VIEWONLY-01
+```
+
+Por tag/ticket/suite:
+
+```powershell
+npm run test:tag -- @int-100
+npm run test:tag -- @smoke
+```
+
+Para somente validar o mapeamento, adicione `--dry-run`. Para UI visível, adicione `--headed`.
+
+```powershell
+npm run test:feature -- features/intelligence/ui/perfis/consulta.feature --dry-run
+npm run test:steps -- steps/intelligence/ui/perfis/consulta.steps.ts --headed
 ```
 
 ## Tags
@@ -71,7 +96,7 @@ FEATURE -> STEP -> POM   (UI)
 - `@permission-*`: permissão técnica comprovada.
 - `@positive`, `@negative`: natureza do cenário.
 
-## Execução
+## Execução completa
 
 ```powershell
 npm install
