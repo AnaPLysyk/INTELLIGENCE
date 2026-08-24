@@ -16,6 +16,28 @@ function walk(dir, out = []) {
   return out;
 }
 
+function tagsAntesDoCenario(linhas, indice) {
+  const tags = [];
+  for (let i = indice - 1; i >= 0; i -= 1) {
+    const linha = linhas[i].trim();
+    if (!linha) continue;
+    if (!linha.startsWith('@')) break;
+    tags.unshift(...linha.split(/\s+/).filter((tag) => tag.startsWith('@')));
+  }
+  return tags;
+}
+
+function passosDoCenario(linhas, inicio) {
+  const passos = [];
+  for (let i = inicio + 1; i < linhas.length; i += 1) {
+    const linha = linhas[i].trim();
+    if (/^(Cenário|Cenario|Scenario|Esquema do Cenário|Esquema do Cenario|Scenario Outline):/i.test(linha)) break;
+    const match = linha.match(/^(Dado|Quando|Então|Entao|E|Mas)\s+(.+)$/i);
+    if (match) passos.push({ keyword: match[1], texto: match[2] });
+  }
+  return passos;
+}
+
 for (const legado of ['support', 'tests', 'playwright.config.ts']) {
   if (fs.existsSync(path.join(root, legado))) errors.push(`residuo legado encontrado: ${legado}`);
 }
@@ -34,13 +56,73 @@ for (const arquivo of arquivos) {
 const features = relativos.filter((arquivo) => arquivo.startsWith('features/') && arquivo.endsWith('.feature'));
 const featurePattern = /^features\/intelligence\/(api|ui|bd)\/.+\.feature$/;
 const pastasFeatureProibidas = /\/(regressao|regression|smoke|release|releases|permissoes|permissions|tickets?)\//i;
+const casesEncontrados = new Map();
+const passosGenericosProibidos = [
+  'que o caso automatizado está preparado',
+  'executo o comportamento automatizado do caso',
+  'o contrato automatizado deve ser atendido',
+];
+
 for (const feature of features) {
   if (!featurePattern.test(feature)) errors.push(`feature fora da arquitetura por camada: ${feature}`);
   if (pastasFeatureProibidas.test(feature)) errors.push(`feature usa metadado como diretorio: ${feature}`);
 
   const camada = feature.split('/')[2];
   const conteudo = fs.readFileSync(path.join(root, feature), 'utf8');
+  const linhas = conteudo.split(/\r?\n/);
+
   if (!conteudo.includes(`@${camada}`)) errors.push(`feature ${feature} nao declara a tag de camada @${camada}`);
+  if (!/^\s*Funcionalidade:/mu.test(conteudo)) errors.push(`feature sem titulo de Funcionalidade: ${feature}`);
+  for (const narrativa of ['Como ', 'Quero ', 'Para ']) {
+    if (!linhas.some((linha) => linha.trimStart().startsWith(narrativa))) {
+      errors.push(`feature ${feature} sem narrativa BDD '${narrativa.trim()}'`);
+    }
+  }
+
+  if (/Esquema do Cenário:|Esquema do Cenario:|Scenario Outline:/i.test(conteudo)) {
+    errors.push(`feature ainda usa Scenario Outline/Esquema generico: ${feature}`);
+  }
+
+  for (const frase of passosGenericosProibidos) {
+    if (conteudo.includes(frase)) errors.push(`feature ${feature} ainda usa passo generico: ${frase}`);
+  }
+  if (/que o caso\s+"<id>"\s+está preparado/i.test(conteudo)) {
+    errors.push(`feature ${feature} ainda usa identificacao generica por <id>`);
+  }
+
+  for (let i = 0; i < linhas.length; i += 1) {
+    const linha = linhas[i].trim();
+    const cenario = linha.match(/^(?:Cenário|Cenario|Scenario):\s*(.+)$/i);
+    if (!cenario) continue;
+
+    const titulo = cenario[1].trim();
+    if (titulo.length < 8) errors.push(`cenario com titulo pouco descritivo em ${feature}:${i + 1}: ${titulo}`);
+
+    const tags = tagsAntesDoCenario(linhas, i);
+    const caseTags = tags.filter((tag) => tag.startsWith('@case-'));
+    if (caseTags.length !== 1) {
+      errors.push(`cenario ${feature}:${i + 1} precisa de exatamente um @case-<ID>; encontrados=${caseTags.length}`);
+    } else {
+      const caseId = caseTags[0].slice('@case-'.length);
+      const anterior = casesEncontrados.get(caseId);
+      if (anterior) errors.push(`@case-${caseId} duplicado: ${anterior} e ${feature}:${i + 1}`);
+      else casesEncontrados.set(caseId, `${feature}:${i + 1}`);
+    }
+
+    const passos = passosDoCenario(linhas, i);
+    let principal;
+    const papeis = new Set();
+    for (const passo of passos) {
+      const keyword = passo.keyword.toLowerCase();
+      if (keyword === 'dado') principal = 'dado';
+      else if (keyword === 'quando') principal = 'quando';
+      else if (keyword === 'então' || keyword === 'entao') principal = 'entao';
+      if (principal) papeis.add(principal);
+    }
+    for (const papel of ['dado', 'quando', 'entao']) {
+      if (!papeis.has(papel)) errors.push(`cenario ${feature}:${i + 1} sem passo principal ${papel.toUpperCase()}`);
+    }
+  }
 }
 if (!features.length) errors.push('nenhuma Feature encontrada em features/intelligence/{api,ui,bd}');
 
@@ -86,5 +168,5 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(
-  `Estrutura valida: ${features.length} Features e ${steps.length} arquivos de Steps organizados por responsabilidade; Ranger INT-100 preservado; sem residuos legados.`,
+  `Estrutura valida: ${features.length} Features, ${casesEncontrados.size} cenarios BDD com @case unico e ${steps.length} arquivos de Steps; Ranger INT-100 preservado; sem residuos legados.`,
 );
