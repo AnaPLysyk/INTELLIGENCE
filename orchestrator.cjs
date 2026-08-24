@@ -2,7 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 const { limparCucumberDist } = require('./scripts/clean-cucumber.cjs');
 
 const root = __dirname;
@@ -64,70 +64,107 @@ function build() {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-const args = process.argv.slice(2);
-const scheduled = args.includes('--scheduled');
-const explicit = args.find((arg) => !arg.startsWith('--'));
-const suiteName = explicit || process.env.AUTOMATION_SUITE?.trim()
-  || (scheduled ? suiteFromSchedule(process.env.GITHUB_EVENT_SCHEDULE?.trim()) : plan.defaultSuite);
-const suite = plan.suites[suiteName];
-if (!suite) fail(`suite desconhecida '${suiteName}'. Opcoes: ${Object.keys(plan.suites).join(', ')}`);
-
-const ticket = ticketFromEnv();
-const caseId = caseIdFromEnv();
-const historicalRelease = releaseFromContext(args);
-if (historicalRelease && suiteName !== 'release') fail('release historica deve ser executada pela suite release');
-const historicalTickets = historicalRelease ? plan.releaseHistory?.[historicalRelease] : null;
-if (historicalRelease && !historicalTickets) fail(`release historica nao mapeada: ${historicalRelease}`);
-
-let tags;
-if (historicalRelease) {
-  tags = `(${tagExpressionFromTickets(historicalTickets)})`;
-} else {
-  tags = suite.grep;
-  if (ticket) tags = combinarTags(tags, `@${ticket.toLowerCase()}`);
-  if (caseId) tags = combinarTags(tags, `@case-${caseId}`);
-}
-const selectedRelease = historicalRelease || plan.release;
-
-if (args.includes('--show-plan')) {
-  console.log(JSON.stringify({
-    project: plan.project,
-    release: selectedRelease,
-    ...suite,
-    selectedSuite: suiteName,
-    selectedTicket: ticket,
-    selectedCaseId: caseId,
-    selectedHistoricalRelease: historicalRelease,
-    selectedHistoricalTickets: historicalTickets,
-    selectedTags: tags,
-  }, null, 2));
-  process.exit(0);
-}
-
-build();
-const cucumberCli = path.join(root, 'node_modules', '@cucumber', 'cucumber', 'bin', 'cucumber.js');
-const cucumberArgs = [cucumberCli, '--config', 'cucumber.cjs', '--tags', tags];
-if (args.includes('--list')) cucumberArgs.push('--dry-run', '--format', 'summary');
-
-console.log(
-  `[orchestrator] project=${plan.project} suite=${suiteName} release=${selectedRelease} tags=${tags} tests=${ticket || caseId || historicalRelease ? 'filtered' : suite.expectedTests}`,
-);
-const result = spawnSync(process.execPath, cucumberArgs, {
-  cwd: root,
-  stdio: 'inherit',
-  shell: false,
-  env: process.env,
-});
-if (result.error) fail(result.error.message);
-
-if (!args.includes('--list')) {
-  const qa = spawnSync(process.execPath, [path.join(root, 'scripts', 'qa-result.cjs')], {
-    cwd: root,
-    stdio: 'inherit',
-    shell: false,
-    env: process.env,
+function executarProcesso(command, args, options) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, options);
+    child.once('error', reject);
+    child.once('close', (code, signal) => {
+      resolve({ status: typeof code === 'number' ? code : null, signal: signal || null });
+    });
   });
-  if (qa.error) fail(qa.error.message);
-  if (qa.status !== 0) process.exit(qa.status ?? 1);
 }
-process.exit(result.status ?? 1);
+
+async function main() {
+  const args = process.argv.slice(2);
+  const scheduled = args.includes('--scheduled');
+  const explicit = args.find((arg) => !arg.startsWith('--'));
+  const suiteName = explicit || process.env.AUTOMATION_SUITE?.trim()
+    || (scheduled ? suiteFromSchedule(process.env.GITHUB_EVENT_SCHEDULE?.trim()) : plan.defaultSuite);
+  const suite = plan.suites[suiteName];
+  if (!suite) fail(`suite desconhecida '${suiteName}'. Opcoes: ${Object.keys(plan.suites).join(', ')}`);
+
+  const ticket = ticketFromEnv();
+  const caseId = caseIdFromEnv();
+  const historicalRelease = releaseFromContext(args);
+  if (historicalRelease && suiteName !== 'release') fail('release historica deve ser executada pela suite release');
+  const historicalTickets = historicalRelease ? plan.releaseHistory?.[historicalRelease] : null;
+  if (historicalRelease && !historicalTickets) fail(`release historica nao mapeada: ${historicalRelease}`);
+
+  let tags;
+  if (historicalRelease) {
+    tags = `(${tagExpressionFromTickets(historicalTickets)})`;
+  } else {
+    tags = suite.grep;
+    if (ticket) tags = combinarTags(tags, `@${ticket.toLowerCase()}`);
+    if (caseId) tags = combinarTags(tags, `@case-${caseId}`);
+  }
+  const selectedRelease = historicalRelease || plan.release;
+
+  if (args.includes('--show-plan')) {
+    console.log(JSON.stringify({
+      project: plan.project,
+      release: selectedRelease,
+      ...suite,
+      selectedSuite: suiteName,
+      selectedTicket: ticket,
+      selectedCaseId: caseId,
+      selectedHistoricalRelease: historicalRelease,
+      selectedHistoricalTickets: historicalTickets,
+      selectedTags: tags,
+    }, null, 2));
+    return 0;
+  }
+
+  build();
+  const cucumberCli = path.join(root, 'node_modules', '@cucumber', 'cucumber', 'bin', 'cucumber.js');
+  const cucumberArgs = [cucumberCli, '--config', 'cucumber.cjs', '--tags', tags];
+  const listOnly = args.includes('--list');
+  if (listOnly) cucumberArgs.push('--dry-run', '--format', 'summary');
+
+  console.log(
+    `[orchestrator] project=${plan.project} suite=${suiteName} release=${selectedRelease} tags=${tags} tests=${ticket || caseId || historicalRelease ? 'filtered' : suite.expectedTests}`,
+  );
+  console.log(`[orchestrator] cucumber-run mode=${listOnly ? 'dry-run' : 'execute'} status=START`);
+
+  let result;
+  try {
+    result = await executarProcesso(process.execPath, cucumberArgs, {
+      cwd: root,
+      stdio: 'inherit',
+      shell: false,
+      env: process.env,
+    });
+  } catch (error_) {
+    fail(`falha ao iniciar Cucumber: ${error_.message}`);
+  }
+
+  console.log(
+    `[orchestrator] cucumber-run mode=${listOnly ? 'dry-run' : 'execute'} status=END exitCode=${result.status ?? 'null'} signal=${result.signal || '-'}`,
+  );
+
+  if (result.status === null) {
+    fail(`Cucumber terminou sem exit code${result.signal ? ` (signal=${result.signal})` : ''}.`);
+  }
+
+  if (!listOnly) {
+    const qa = spawnSync(process.execPath, [path.join(root, 'scripts', 'qa-result.cjs')], {
+      cwd: root,
+      stdio: 'inherit',
+      shell: false,
+      env: process.env,
+    });
+    if (qa.error) fail(qa.error.message);
+    if (qa.status !== 0) return qa.status ?? 1;
+  }
+
+  return result.status ?? 1;
+}
+
+main()
+  .then((exitCode) => {
+    process.exitCode = typeof exitCode === 'number' ? exitCode : 1;
+  })
+  .catch((error_) => {
+    console.error(`[orchestrator] erro inesperado: ${error_.stack || error_.message}`);
+    process.exitCode = 1;
+  });
