@@ -34,5 +34,68 @@
     "projectKey": "AnaPLysyk_INTELLIGENCE",
     "organization": "anaplysyk",
     "propertiesFile": "sonar-project.properties"
+  },
+  "ranger": {
+    "enabled": true,
+    "baselineProfile": "baseline-intelligence",
+    "profiles": {
+      "int100AdminFull": {
+        "description": "Acesso administrativo completo ao Intelligence",
+        "permissions": ["intelligence_user", "intelligence_list_regular"],
+        "ensure": ["intelligence_user", "intelligence_list_regular"],
+        "remove": [],
+        "groups": [],
+        "roles": ["admin"]
+      },
+      "int100ViewOnly": {
+        "description": "Acesso somente leitura ao Intelligence",
+        "permissions": ["intelligence_view_only"],
+        "ensure": ["intelligence_view_only"],
+        "remove": ["intelligence_user", "intelligence_list_regular"],
+        "groups": [],
+        "roles": []
+      },
+      "int100NoAccess": {
+        "description": "Sem acesso ao Intelligence",
+        "permissions": [],
+        "ensure": [],
+        "remove": ["intelligence_view_only", "intelligence_user", "intelligence_list_regular"],
+        "groups": [],
+        "roles": []
+      }
+    },
+    "suites": {
+      "int100Full": {
+        "description": "Ciclo completo INT-100: admin → view-only → no-access com restauração entre fases",
+        "baseline": "baseline-intelligence",
+        "phases": [
+          {
+            "name": "admin",
+            "profile": "int100AdminFull",
+            "tests": "@acceptance @int-100 @int100-admin",
+            "allowBlockUnblock": true,
+            "allowProvisioning": true,
+            "description": "Fase 1: Validação com acesso administrativo"
+          },
+          {
+            "name": "view-only",
+            "profile": "int100ViewOnly",
+            "tests": "@acceptance @int-100 @viewonly",
+            "reuseData": true,
+            "reuseDataEnv": "INTELLIGENCE_REUTILIZAR_MASSA=true",
+            "description": "Fase 2: Validação com acesso somente leitura"
+          },
+          {
+            "name": "no-access",
+            "profile": "int100NoAccess",
+            "tests": "@acceptance @int-100 @noaccess",
+            "reuseData": true,
+            "reuseDataEnv": "INTELLIGENCE_REUTILIZAR_MASSA=true",
+            "description": "Fase 3: Validação com acesso negado"
+          }
+        ],
+        "restoreAfter": true
+      }
+    }
   }
 }
