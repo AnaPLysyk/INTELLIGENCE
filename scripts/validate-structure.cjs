@@ -21,6 +21,8 @@ for (const legado of ['support', 'tests', 'playwright.config.ts']) {
 }
 
 const arquivos = walk(root);
+const relativos = arquivos.map((arquivo) => path.relative(root, arquivo).replaceAll('\\', '/'));
+
 for (const arquivo of arquivos) {
   const relativo = path.relative(root, arquivo).replaceAll('\\', '/');
   if (/\.spec\.ts$/i.test(relativo)) errors.push(`spec Playwright legado encontrado: ${relativo}`);
@@ -29,9 +31,20 @@ for (const arquivo of arquivos) {
   }
 }
 
-const steps = arquivos
-  .map((arquivo) => path.relative(root, arquivo).replaceAll('\\', '/'))
-  .filter((arquivo) => arquivo.startsWith('steps/') && arquivo.endsWith('.steps.ts'));
+const features = relativos.filter((arquivo) => arquivo.startsWith('features/') && arquivo.endsWith('.feature'));
+const featurePattern = /^features\/intelligence\/(api|ui|bd)\/.+\.feature$/;
+const pastasProibidas = /\/(regressao|regression|smoke|release|releases|permissoes|permissions|tickets?)\//i;
+for (const feature of features) {
+  if (!featurePattern.test(feature)) errors.push(`feature fora da arquitetura por camada: ${feature}`);
+  if (pastasProibidas.test(feature)) errors.push(`feature usa metadado como diretorio: ${feature}`);
+
+  const camada = feature.split('/')[2];
+  const conteudo = fs.readFileSync(path.join(root, feature), 'utf8');
+  if (!conteudo.includes(`@${camada}`)) errors.push(`feature ${feature} nao declara a tag de camada @${camada}`);
+}
+if (!features.length) errors.push('nenhuma Feature encontrada em features/intelligence/{api,ui,bd}');
+
+const steps = relativos.filter((arquivo) => arquivo.startsWith('steps/') && arquivo.endsWith('.steps.ts'));
 const stepPattern = /^steps\/intelligence\/(common\/.+|(?:api|ui|bd)\/(?:positivo|negativo)\/.+)\.steps\.ts$/;
 for (const step of steps) if (!stepPattern.test(step)) errors.push(`step fora da arquitetura: ${step}`);
 if (!steps.length) errors.push('nenhum Step Definition TypeScript encontrado');
@@ -46,4 +59,4 @@ if (errors.length) {
   console.error(errors.map((erro) => `- ${erro}`).join('\n'));
   process.exit(1);
 }
-console.log(`Estrutura valida: ${steps.length} arquivos de Steps; sem support/, tests/, bridge ou .spec.ts.`);
+console.log(`Estrutura valida: ${features.length} Features por camada/dominio e ${steps.length} arquivos de Steps; sem residuos legados.`);

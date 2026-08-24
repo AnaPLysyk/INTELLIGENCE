@@ -1,6 +1,8 @@
 # Plano de automação
 
-`automation.plan.json` define as suítes e agendas. Os testes executáveis ficam em `steps/intelligence/{api,ui,bd}/{positivo,negativo}`; ticket e release permanecem como tags nas Features.
+`automation.plan.json` define suítes e agendas. As Features ficam organizadas por camada e domínio em `features/intelligence/{api,ui,bd}`; os testes executáveis ficam em `steps/intelligence/{api,ui,bd}/{positivo,negativo}`.
+
+Ticket, release, suite e permissões são tags, nunca diretórios.
 
 | Plano | Execução | Critério |
 |---|---|---|
@@ -9,13 +11,20 @@
 | `release` | manual | tag da release atual ou tags dos tickets de release histórica |
 | `destructive` | manual | cenários `@destructive` |
 
+Exemplo de rastreabilidade:
+
+```gherkin
+@regression @int-100 @release-unassigned
+@viewonly @permission-intelligence_view_only
+```
+
 O runner é Cucumber. Playwright fornece browser/API/assertions dentro dos Steps.
 
 ## Segurança
 
 - SMART/GBDS são usados para obter massa real sem criar dados artificiais.
 - Banco SMART aceita apenas SELECT/SHOW/DESCRIBE/EXPLAIN.
-- Cenários sem contrato verificável permanecem `@coverage-gap` e falham como `BLOQUEADO`; a automação não inventa método HTTP, payload ou regra de UI.
+- Cenários sem contrato verificável permanecem `@coverage-gap` e falham como `BLOQUEADO`.
 - Resultados são classificados em `test-results/qa-result.json` antes de qualquer sincronização com Qase.
 
 ## Comandos
