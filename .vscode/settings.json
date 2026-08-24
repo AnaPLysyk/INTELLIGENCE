@@ -1,12 +1,6 @@
 {
-  "cucumber.features": [
-    "features/**/*.feature"
-  ],
-  "cucumber.glue": [
-    "steps/**/*.steps.cjs",
-    "steps/**/*.steps.js",
-    "steps/**/*.steps.ts"
-  ],
+  "cucumber.features": ["features/**/*.feature"],
+  "cucumber.glue": ["steps/**/*.steps.ts"],
   "[cucumber]": {
     "editor.semanticHighlighting.enabled": true,
     "editor.formatOnSave": true

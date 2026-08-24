@@ -3,17 +3,23 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const diretorioRelatorios = path.join(__dirname, 'reports', 'cucumber');
-fs.mkdirSync(diretorioRelatorios, { recursive: true });
+fs.mkdirSync(path.join(__dirname, 'reports', 'cucumber'), { recursive: true });
+fs.mkdirSync(path.join(__dirname, 'test-results'), { recursive: true });
 
 module.exports = {
   default: {
     paths: ['features/**/*.feature'],
-    require: ['steps/**/*.steps.cjs'],
+    require: [
+      '.cucumber-dist/cucumber/world.js',
+      '.cucumber-dist/cucumber/hooks.js',
+      '.cucumber-dist/steps/**/*.steps.js'
+    ],
     format: [
       'progress-bar',
       'summary',
-      'html:reports/cucumber/cucumber.html',
+      'json:test-results/cucumber.json',
+      'html:reports/cucumber/cucumber.html'
     ],
-  },
+    parallel: 1
+  }
 };

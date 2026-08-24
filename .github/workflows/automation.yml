@@ -1,4 +1,4 @@
-name: INTELLIGENCE - Smoke, Regression e Release
+name: INTELLIGENCE - Cucumber Smoke, Regression e Release
 
 on:
   schedule:
@@ -11,48 +11,37 @@ on:
         required: true
         default: smoke
         type: choice
-        options:
-          - smoke
-          - regression
-          - destructive
-          - release
+        options: [smoke, regression, destructive, release]
 
 permissions:
   contents: read
 
 jobs:
-  playwright:
+  cucumber:
     runs-on: [self-hosted, windows]
     timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-
       - name: Configurar Node.js
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: "22"
           cache: npm
-
       - name: Instalar dependencias
         run: npm ci --ignore-scripts
-
       - name: Preparar ambiente local
         shell: pwsh
         env:
           INTELLIGENCE_ENV_FILE: ${{ secrets.INTELLIGENCE_ENV_FILE }}
         run: |
-          if ($env:INTELLIGENCE_ENV_FILE) {
-            [IO.File]::WriteAllText("$PWD/.env.local", $env:INTELLIGENCE_ENV_FILE)
-          }
-          if (-not (Test-Path -LiteralPath "$PWD/.env.local")) {
-            throw "Configure o secret INTELLIGENCE_ENV_FILE ou o .env.local no runner."
-          }
-
+          if ($env:INTELLIGENCE_ENV_FILE) { [IO.File]::WriteAllText("$PWD/.env.local", $env:INTELLIGENCE_ENV_FILE) }
+          if (-not (Test-Path -LiteralPath "$PWD/.env.local")) { throw "Configure o secret INTELLIGENCE_ENV_FILE ou o .env.local no runner." }
       - name: Instalar Chromium
         run: npx playwright install chromium
-
-      - name: Executar plano
+      - name: Validar arquitetura
+        run: npm run validar:estrutura
+      - name: Executar plano Cucumber
         env:
           AUTOMATION_SUITE: ${{ inputs.suite }}
           GITHUB_EVENT_SCHEDULE: ${{ github.event.schedule }}

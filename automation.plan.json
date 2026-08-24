@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "project": "INTELLIGENCE",
   "release": "5.5.0.5062",
   "releaseHistory": {
@@ -14,36 +14,26 @@
       "description": "Saude, autenticacao, banco somente leitura, busca CPF e deep-link administrativo.",
       "grep": "@smoke",
       "schedule": "0 */6 * * 1-5",
-      "expectedTests": 6,
-      "cases": [
-        "API-NEG-COMMON-04",
-        "API-NEG-COMMON-05",
-        "API-POS-CPF-01",
-        "BD-POS-CONNECTION-01",
-        "INT-100-I5",
-        "INT-100-BASELINE"
-      ]
+      "expectedTests": 6
     },
     "regression": {
-      "description": "Cobertura funcional completa mantida no repositorio.",
+      "description": "Cobertura funcional completa mantida em Features e Steps Cucumber.",
       "grep": "@regression",
       "schedule": "0 3 * * 1-5",
-      "expectedTests": 48,
-      "cases": ["ALL"]
+      "expectedTests": 54
     },
     "release": {
-      "description": "Validacao integral da release atual ou de uma release historica mapeada, sempre reutilizando os mesmos testes.",
+      "description": "Validacao da release atual ou historica reutilizando os mesmos cenarios.",
       "grep": "@release-5.5.0.5062",
       "schedule": null,
-      "expectedTests": 42,
+      "expectedTests": 41,
       "tickets": ["INT-17", "INT-23", "INT-95", "INT-97", "INT-98", "INT-100"]
     },
     "destructive": {
-      "description": "Robustez segura: entradas hostis e prova de que a automacao bloqueia escrita no banco.",
+      "description": "Robustez segura: entradas hostis e prova de bloqueio de escrita no banco.",
       "grep": "@destructive",
       "schedule": null,
-      "expectedTests": 9,
-      "cases": ["ALL"]
+      "expectedTests": 9
     }
   }
 }

@@ -10,10 +10,11 @@
     "types": ["node", "@playwright/test"]
   },
   "include": [
-    "playwright.config.ts",
-    "tests/**/*.ts",
-    "support/**/*.ts",
+    "config/**/*.ts",
+    "cucumber/**/*.ts",
+    "steps/**/*.ts",
     "pom/**/*.ts",
-    "utils/**/*.ts"
+    "utils/**/*.ts",
+    "scripts/**/*.ts"
   ]
 }

@@ -1,7 +1,8 @@
 node_modules/
 .env.local
+.cucumber-dist/
 test-results/
-playwright-report/
-blob-report/
 reports/
 test-data/generated/
+playwright-report/
+blob-report/

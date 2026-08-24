@@ -8,45 +8,25 @@
     "regression": "npm run test:regression",
     "release": "npm run test:release",
     "scheduled": "npm run test:scheduled",
-    "porTicket": "node support/qa/rodar-por-ticket.cjs"
+    "porTicket": "node scripts/run-by-ticket.cjs"
   },
   "plan": "automation.plan.json",
-  "runtime": {
-    "preferred": "host",
-    "fallback": "host"
-  },
+  "runtime": { "preferred": "host", "fallback": "host" },
   "preflight": {
-    "vpn": {
-      "required": true,
-      "autoEnsure": true
-    },
-    "tcp": [
-      {
-        "name": "SMART_DB",
-        "hostEnv": "SMART_DB_HOST",
-        "portEnv": "SMART_DB_PORT",
-        "defaultPort": 3306,
-        "timeoutMs": 3000
-      }
-    ]
+    "vpn": { "required": true, "autoEnsure": true },
+    "tcp": [{
+      "name": "SMART_DB",
+      "hostEnv": "SMART_DB_HOST",
+      "portEnv": "SMART_DB_PORT",
+      "defaultPort": 3306,
+      "timeoutMs": 3000
+    }]
   },
   "results": {
-    "smoke": {
-      "dir": "test-results",
-      "filename": "qa-result.json"
-    },
-    "regression": {
-      "dir": "test-results",
-      "filename": "qa-result.json"
-    },
-    "release": {
-      "dir": "test-results",
-      "filename": "qa-result.json"
-    },
-    "scheduled": {
-      "dir": "test-results",
-      "filename": "qa-result.json"
-    }
+    "smoke": { "dir": "test-results", "filename": "qa-result.json" },
+    "regression": { "dir": "test-results", "filename": "qa-result.json" },
+    "release": { "dir": "test-results", "filename": "qa-result.json" },
+    "scheduled": { "dir": "test-results", "filename": "qa-result.json" }
   },
   "sonar": {
     "projectKey": "AnaPLysyk_INTELLIGENCE",
