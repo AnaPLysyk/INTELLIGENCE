@@ -1,0 +1,17 @@
+{
+  "cucumber.features": [
+    "features/**/*.feature"
+  ],
+  "cucumber.glue": [
+    "steps/**/*.steps.cjs",
+    "steps/**/*.steps.js",
+    "steps/**/*.steps.ts"
+  ],
+  "[cucumber]": {
+    "editor.semanticHighlighting.enabled": true,
+    "editor.formatOnSave": true
+  },
+  "files.associations": {
+    "*.feature": "cucumber"
+  }
+}
