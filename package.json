@@ -16,6 +16,8 @@
     "test:cucumber": "cucumber-js --config cucumber.cjs",
     "test:cucumber:int100": "cucumber-js --config cucumber.cjs --tags @int-100",
     "test:cucumber:int100:dry": "cucumber-js --config cucumber.cjs --tags @int-100 --dry-run",
+    "test:int100:list": "playwright test --grep @int-100 --list",
+    "check:int100:preqase": "npm run typecheck && npm run validar:estrutura && npm run test:cucumber:int100 && npm run test:int100:list",
     "plan:show": "node orchestrator.cjs --show-plan",
     "report:pdf": "node support/playwright/gerar-relatorio-pdf.cjs"
   },
