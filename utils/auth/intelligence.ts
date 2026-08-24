@@ -56,9 +56,10 @@ async function classificar(request: APIRequestContext, item: Candidato): Promise
 function corresponde(perfil: PerfilIntelligence, claims: Set<string>): boolean {
   const viewOnly = claims.has('intelligence_view_only');
   const acesso = claims.has('intelligence_user');
+  const busca = claims.has('intelligence_list_regular');
 
   return perfil === 'view-only'
-    ? viewOnly
+    ? viewOnly && !acesso && !busca
     : !viewOnly && !acesso;
 }
 
