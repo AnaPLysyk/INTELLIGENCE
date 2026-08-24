@@ -56,7 +56,6 @@ async function anexar(world, conteudo, mime = 'text/plain') {
 
 async function executarTesteVinculado(world) {
   if (world.playwrightExecutado) return;
-  world.playwrightExecutado = true;
 
   const vinculo = world.vinculoPlaywright;
   if (!vinculo) throw new Error('Cenário Cucumber sem vínculo Playwright resolvido.');
@@ -64,10 +63,12 @@ async function executarTesteVinculado(world) {
     throw new Error(`Mapeamento Cucumber sem teste Playwright correspondente: ${vinculo.id}`);
   }
 
-  const executavel = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  world.playwrightExecutado = true;
+
+  const playwrightCli = require.resolve('@playwright/test/cli', { paths: [RAIZ_PROJETO] });
   const grep = `\\[${escaparRegex(vinculo.id)}\\]`;
   const argumentos = [
-    'playwright',
+    playwrightCli,
     'test',
     vinculo.spec,
     '--grep',
@@ -76,11 +77,12 @@ async function executarTesteVinculado(world) {
     '--reporter=line',
   ];
 
-  const resultado = spawnSync(executavel, argumentos, {
+  const resultado = spawnSync(process.execPath, argumentos, {
     cwd: RAIZ_PROJETO,
     env: process.env,
     encoding: 'utf8',
     windowsHide: true,
+    shell: false,
     timeout: 210_000,
   });
 
