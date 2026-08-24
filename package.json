@@ -13,13 +13,14 @@
     "test:destructive": "node orchestrator.cjs destructive",
     "test:release": "node orchestrator.cjs release",
     "test:scheduled": "node orchestrator.cjs --scheduled",
-    "test:cucumber": "npx --yes @cucumber/cucumber@13.2.1 --config cucumber.cjs",
-    "test:cucumber:int100": "npx --yes @cucumber/cucumber@13.2.1 --config cucumber.cjs --tags @int-100",
-    "test:cucumber:int100:dry": "npx --yes @cucumber/cucumber@13.2.1 --config cucumber.cjs --tags @int-100 --dry-run",
+    "test:cucumber": "cucumber-js --config cucumber.cjs",
+    "test:cucumber:int100": "cucumber-js --config cucumber.cjs --tags @int-100",
+    "test:cucumber:int100:dry": "cucumber-js --config cucumber.cjs --tags @int-100 --dry-run",
     "plan:show": "node orchestrator.cjs --show-plan",
     "report:pdf": "node support/playwright/gerar-relatorio-pdf.cjs"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "13.2.1",
     "@playwright/test": "1.60.0",
     "@types/node": "25.9.1",
     "dotenv": "17.4.2",
