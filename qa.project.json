@@ -9,7 +9,10 @@
     "regression": "npm run test:regression",
     "release": "npm run test:release",
     "scheduled": "npm run test:scheduled",
-    "porTicket": "node scripts/run-by-ticket.cjs"
+    "porTicket": "node scripts/run-by-ticket.cjs",
+    "test100Admin": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@acceptance and @int-100 and @admin\"",
+    "test100ViewOnly": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@acceptance and @int-100 and @viewonly\"",
+    "test100NoAccess": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@acceptance and @int-100 and @no-access\""
   },
   "plan": "automation.plan.json",
   "runtime": { "preferred": "host", "fallback": "host" },
@@ -35,67 +38,65 @@
     "organization": "anaplysyk",
     "propertiesFile": "sonar-project.properties"
   },
-  "ranger": {
-    "enabled": true,
-    "baselineProfile": "baseline-intelligence",
-    "profiles": {
-      "int100AdminFull": {
-        "description": "Acesso administrativo completo ao Intelligence",
-        "permissions": ["intelligence_user", "intelligence_list_regular"],
-        "ensure": ["intelligence_user", "intelligence_list_regular"],
-        "remove": [],
-        "groups": [],
-        "roles": ["admin"]
-      },
-      "int100ViewOnly": {
-        "description": "Acesso somente leitura ao Intelligence",
-        "permissions": ["intelligence_view_only"],
-        "ensure": ["intelligence_view_only"],
-        "remove": ["intelligence_user", "intelligence_list_regular"],
-        "groups": [],
-        "roles": []
-      },
-      "int100NoAccess": {
-        "description": "Sem acesso ao Intelligence",
-        "permissions": [],
-        "ensure": [],
-        "remove": ["intelligence_view_only", "intelligence_user", "intelligence_list_regular"],
-        "groups": [],
-        "roles": []
+  "rangerBaseline": {
+    "role": "administrator",
+    "count": 148,
+    "sha256": "aa220f2311ddcb1911f9e79bc4c6501232f55ebc384494b6e97fa62c0cd6b773",
+    "capturedAt": "2026-08-20T16:59:00-03:00",
+    "note": "Baseline compartilhado do administrator validado antes do INT-100."
+  },
+  "rangerProfiles": {
+    "int100AdminFull": {
+      "mode": "passthrough",
+      "role": "administrator",
+      "executionEnv": {
+        "INTELLIGENCE_ADMIN_USERNAME": ["GBDS_USERNAME"],
+        "INTELLIGENCE_ADMIN_PASSWORD": ["GBDS_PASSWORD"]
       }
     },
-    "suites": {
-      "int100Full": {
-        "description": "Ciclo completo INT-100: admin → view-only → no-access com restauração entre fases",
-        "baseline": "baseline-intelligence",
-        "phases": [
-          {
-            "name": "admin",
-            "profile": "int100AdminFull",
-            "tests": "@acceptance @int-100 @int100-admin",
-            "allowBlockUnblock": true,
-            "allowProvisioning": true,
-            "description": "Fase 1: Validação com acesso administrativo"
-          },
-          {
-            "name": "view-only",
-            "profile": "int100ViewOnly",
-            "tests": "@acceptance @int-100 @viewonly",
-            "reuseData": true,
-            "reuseDataEnv": "INTELLIGENCE_REUTILIZAR_MASSA=true",
-            "description": "Fase 2: Validação com acesso somente leitura"
-          },
-          {
-            "name": "no-access",
-            "profile": "int100NoAccess",
-            "tests": "@acceptance @int-100 @noaccess",
-            "reuseData": true,
-            "reuseDataEnv": "INTELLIGENCE_REUTILIZAR_MASSA=true",
-            "description": "Fase 3: Validação com acesso negado"
-          }
-        ],
-        "restoreAfter": true
-      }
+    "int100ViewOnly": {
+      "mode": "delta",
+      "role": "administrator",
+      "ensure": ["intelligence_view_only"],
+      "remove": ["intelligence_user", "intelligence_list_regular"],
+      "ssh": {
+        "host": "172.16.1.146",
+        "user": "anapaula.external",
+        "identity": "C:\\Users\\Testing Company\\.ssh\\id_ed25519_automacao_smart",
+        "sudo": true
+      },
+      "executionEnv": {
+        "INT_100_VIEWONLY_USERNAME": ["GBDS_USERNAME"],
+        "INT_100_VIEWONLY_PASSWORD": ["GBDS_PASSWORD"],
+        "INTELLIGENCE_REUTILIZAR_MASSA": { "value": "true" }
+      },
+      "restoreBaselineIfPresent": true
+    },
+    "int100NoAccess": {
+      "mode": "delta",
+      "role": "administrator",
+      "remove": ["intelligence_view_only", "intelligence_user", "intelligence_list_regular"],
+      "ssh": {
+        "host": "172.16.1.146",
+        "user": "anapaula.external",
+        "identity": "C:\\Users\\Testing Company\\.ssh\\id_ed25519_automacao_smart",
+        "sudo": true
+      },
+      "executionEnv": {
+        "INT_100_SEM_PERMISSAO_USERNAME": ["GBDS_USERNAME"],
+        "INT_100_SEM_PERMISSAO_PASSWORD": ["GBDS_PASSWORD"],
+        "INTELLIGENCE_REUTILIZAR_MASSA": { "value": "true" }
+      },
+      "restoreBaselineIfPresent": true
+    }
+  },
+  "rangerSuites": {
+    "int100Full": {
+      "phases": [
+        { "profile": "int100AdminFull", "capability": "test100Admin" },
+        { "profile": "int100ViewOnly", "capability": "test100ViewOnly" },
+        { "profile": "int100NoAccess", "capability": "test100NoAccess" }
+      ]
     }
   }
 }
