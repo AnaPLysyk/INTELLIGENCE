@@ -32,7 +32,7 @@ Given('que o cenário está vinculado ao ticket {string}', function (ticket) {
   this.ticket = ticket;
 });
 
-When('o cenário Playwright {string} for executado', function (id) {
+When('o cenário visual estiver vinculado ao Playwright {string}', function (id) {
   const arquivo = localizarTestePorId(id);
   if (!arquivo) {
     throw new Error(`Mapeamento Cucumber sem teste Playwright correspondente: ${id}`);
@@ -41,7 +41,7 @@ When('o cenário Playwright {string} for executado', function (id) {
   this.playwrightSpec = arquivo;
 });
 
-Then('o resultado Playwright deve ser aprovado', function () {
+Then('o vínculo com a automação deve existir', function () {
   if (!this.ticket || !this.playwrightTestId || !this.playwrightSpec) {
     throw new Error('Cenário Cucumber sem vínculo completo com o Playwright.');
   }
