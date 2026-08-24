@@ -16,6 +16,12 @@
       "schedule": "0 */6 * * 1-5",
       "expectedTests": 6
     },
+    "acceptance": {
+      "description": "Aceitacao por ticket. Use QA_TICKET_KEY/--ticket para selecionar o ticket sem duplicar os cenarios da regressao.",
+      "grep": "@acceptance",
+      "schedule": null,
+      "expectedTests": 14
+    },
     "regression": {
       "description": "Cobertura funcional completa mantida em Features e Steps Cucumber.",
       "grep": "@regression",

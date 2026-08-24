@@ -10,12 +10,12 @@ Funcionalidade: Navegação do modo somente leitura
     Quando executo o comportamento automatizado do caso
     Então o contrato automatizado deve ser atendido
 
-    @regression @int-100 @release-unassigned @not-found
+    @acceptance @regression @int-100 @case-INT-100-I7 @release-unassigned @not-found
     Exemplos: Retorno da página 404
       | id         |
       | INT-100-I7 |
 
-    @regression @int-100 @release-unassigned @header
+    @acceptance @regression @int-100 @case-INT-100-I6 @release-unassigned @header
     Exemplos: Retorno pelo logo da aplicação
       | id         |
       | INT-100-I6 |

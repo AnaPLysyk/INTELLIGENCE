@@ -10,12 +10,12 @@ Funcionalidade: Consulta direta de perfil
     Quando executo o comportamento automatizado do caso
     Então o contrato automatizado deve ser atendido
 
-    @positive @regression @int-100 @release-unassigned @viewonly @permission-intelligence_view_only
+    @positive @acceptance @regression @int-100 @case-API-POS-PROFILE-VIEWONLY-01 @release-unassigned @viewonly @permission-intelligence_view_only
     Exemplos: Perfil conhecido em somente leitura
-      | id                              |
-      | API-POS-PROFILE-VIEWONLY-01     |
+      | id                          |
+      | API-POS-PROFILE-VIEWONLY-01 |
 
-    @negative @regression @int-100 @release-unassigned @viewonly @permission-intelligence_view_only @not-found
+    @negative @acceptance @regression @int-100 @case-API-NEG-PROFILE-NOTFOUND-01 @release-unassigned @viewonly @permission-intelligence_view_only @not-found
     Exemplos: Perfil inexistente sem erro interno
-      | id                              |
-      | API-NEG-PROFILE-NOTFOUND-01     |
+      | id                          |
+      | API-NEG-PROFILE-NOTFOUND-01 |

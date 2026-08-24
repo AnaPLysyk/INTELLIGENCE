@@ -25,12 +25,12 @@ Funcionalidade: Pesquisa na interface
       | id            |
       | UI-DES-XSS-01 |
 
-    @positive @regression @smoke @int-100 @release-unassigned @admin @permission-intelligence_user @permission-intelligence_list_regular
+    @positive @acceptance @regression @smoke @int-100 @case-INT-100-I5 @release-unassigned @admin @permission-intelligence_user @permission-intelligence_list_regular
     Exemplos: Busca disponível para acesso completo
       | id         |
       | INT-100-I5 |
 
-    @negative @regression @int-100 @release-unassigned @viewonly @permission-intelligence_view_only
+    @negative @acceptance @regression @int-100 @case-INT-100-R3 @release-unassigned @viewonly @permission-intelligence_view_only
     Exemplos: Busca bloqueada para somente leitura
       | id         |
       | INT-100-R3 |

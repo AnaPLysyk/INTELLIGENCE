@@ -47,7 +47,7 @@ Funcionalidade: Busca de perfis pela API
       | API-DES-PATH-01     |
       | API-DES-OVERSIZE-01 |
 
-    @negative @regression @int-100 @release-unassigned @viewonly @permission-intelligence_view_only
+    @negative @acceptance @regression @int-100 @case-API-NEG-COMMON-06 @release-unassigned @viewonly @permission-intelligence_view_only
     Exemplos: Busca bloqueada para somente leitura
       | id                |
       | API-NEG-COMMON-06 |

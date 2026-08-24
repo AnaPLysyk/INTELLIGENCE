@@ -5,7 +5,7 @@ Funcionalidade: Acesso à aplicação
   Quero autenticar apenas quando possuo permissão do Intelligence
   Para impedir a criação de sessão para contas não autorizadas
 
-  @negative @regression @int-100 @release-unassigned @no-access @permission-none @security
+  @negative @acceptance @regression @int-100 @case-UI-NEG-AUTH-NOACCESS-01 @release-unassigned @no-access @permission-none @security
   Cenário: Conta sem permissão não cria sessão do Intelligence
     Dado que o caso "UI-NEG-AUTH-NOACCESS-01" está preparado
     Quando executo o comportamento automatizado do caso

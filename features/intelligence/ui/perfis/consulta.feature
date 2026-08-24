@@ -17,15 +17,15 @@ Funcionalidade: Visualização de perfil
 
     @positive @regression @release-5.5.0.5062 @int-24 @introduced-in-2.0.0 @admin
     Exemplos: Histórico de perfis
-      | id            |
+      | id           |
       | INT-24-UI-01 |
 
-    @positive @regression @int-100 @release-unassigned @viewonly @permission-intelligence_view_only @readonly
+    @positive @acceptance @regression @int-100 @case-INT-100-I2 @release-unassigned @viewonly @permission-intelligence_view_only @readonly
     Exemplos: Perfil em somente leitura
       | id         |
       | INT-100-I2 |
 
-    @negative @regression @int-100 @release-unassigned @viewonly @permission-intelligence_view_only @not-found @hardening
+    @negative @acceptance @regression @int-100 @case-INT-100-I3 @release-unassigned @viewonly @permission-intelligence_view_only @not-found @hardening
     Exemplos: Perfil inexistente
       | id         |
       | INT-100-I3 |

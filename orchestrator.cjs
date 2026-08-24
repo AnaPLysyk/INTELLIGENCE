@@ -26,6 +26,13 @@ function ticketFromEnv() {
   return ticket.toUpperCase();
 }
 
+function caseIdFromEnv() {
+  const caseId = process.env.QA_CASE_ID?.trim();
+  if (!caseId) return null;
+  if (!/^[A-Za-z0-9._:-]+$/.test(caseId)) fail(`case-id invalido recebido em QA_CASE_ID: ${caseId}`);
+  return caseId;
+}
+
 function releaseFromContext(args) {
   const inline = args.find((arg) => arg.startsWith('--release-version='));
   const release = inline?.slice('--release-version='.length).trim() || process.env.QA_RELEASE_VERSION?.trim() || null;
@@ -37,6 +44,11 @@ function releaseFromContext(args) {
 function tagExpressionFromTickets(tickets) {
   if (!Array.isArray(tickets) || !tickets.length) fail('release historica sem tickets mapeados');
   return tickets.map((ticket) => `@${ticket.toLowerCase()}`).join(' or ');
+}
+
+function combinarTags(base, filtro) {
+  if (!filtro) return base;
+  return `(${base}) and ${filtro}`;
 }
 
 function build() {
@@ -61,17 +73,20 @@ const suite = plan.suites[suiteName];
 if (!suite) fail(`suite desconhecida '${suiteName}'. Opcoes: ${Object.keys(plan.suites).join(', ')}`);
 
 const ticket = ticketFromEnv();
+const caseId = caseIdFromEnv();
 const historicalRelease = releaseFromContext(args);
-if (ticket && historicalRelease) fail('QA_TICKET_KEY e QA_RELEASE_VERSION/--release-version nao podem ser usados juntos');
 if (historicalRelease && suiteName !== 'release') fail('release historica deve ser executada pela suite release');
 const historicalTickets = historicalRelease ? plan.releaseHistory?.[historicalRelease] : null;
 if (historicalRelease && !historicalTickets) fail(`release historica nao mapeada: ${historicalRelease}`);
 
-const tags = ticket
-  ? `@${ticket.toLowerCase()}`
-  : historicalRelease
-    ? tagExpressionFromTickets(historicalTickets)
-    : suite.grep;
+let tags;
+if (historicalRelease) {
+  tags = `(${tagExpressionFromTickets(historicalTickets)})`;
+} else {
+  tags = suite.grep;
+  if (ticket) tags = combinarTags(tags, `@${ticket.toLowerCase()}`);
+  if (caseId) tags = combinarTags(tags, `@case-${caseId}`);
+}
 const selectedRelease = historicalRelease || plan.release;
 
 if (args.includes('--show-plan')) {
@@ -81,6 +96,7 @@ if (args.includes('--show-plan')) {
     ...suite,
     selectedSuite: suiteName,
     selectedTicket: ticket,
+    selectedCaseId: caseId,
     selectedHistoricalRelease: historicalRelease,
     selectedHistoricalTickets: historicalTickets,
     selectedTags: tags,
@@ -93,7 +109,9 @@ const cucumberCli = path.join(root, 'node_modules', '@cucumber', 'cucumber', 'bi
 const cucumberArgs = [cucumberCli, '--config', 'cucumber.cjs', '--tags', tags];
 if (args.includes('--list')) cucumberArgs.push('--dry-run', '--format', 'summary');
 
-console.log(`[orchestrator] project=${plan.project} suite=${suiteName} release=${selectedRelease} tags=${tags} tests=${ticket || historicalRelease ? 'filtered' : suite.expectedTests}`);
+console.log(
+  `[orchestrator] project=${plan.project} suite=${suiteName} release=${selectedRelease} tags=${tags} tests=${ticket || caseId || historicalRelease ? 'filtered' : suite.expectedTests}`,
+);
 const result = spawnSync(process.execPath, cucumberArgs, {
   cwd: root,
   stdio: 'inherit',

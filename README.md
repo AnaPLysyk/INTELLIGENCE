@@ -1,133 +1,76 @@
 # INTELLIGENCE — automação Cucumber + Playwright
 
-A automação do GBS Intelligence usa Cucumber como runner e Playwright como biblioteca de browser/API/assertions. Os Step Definitions são os testes executáveis; não existe uma suíte paralela em `tests/`.
+A automação usa Cucumber como runner e Playwright como biblioteca de browser/API/assertions. Os Step Definitions são os testes executáveis; não existe suíte paralela em `tests/`.
 
 ## Estrutura
 
-As Features representam o comportamento por camada/domínio. Os Steps representam a responsabilidade técnica real dentro de cada camada.
+- `features/intelligence/{api,ui,bd}`: comportamento e rastreabilidade.
+- `steps/intelligence/api`: operação → recurso.
+- `steps/intelligence/ui`: tela/área → comportamento.
+- `steps/intelligence/bd`: banco → tabela.
+- `pom/intelligence`: `*.actions.ts` e `*.locators.ts` da UI.
+- `utils/`: API, auth, banco, massa, integrações e funções não visuais.
 
-```text
-steps/intelligence/
-├── api/
-│   ├── autenticar/
-│   ├── buscar/
-│   ├── consultar/
-│   └── escrever/
-├── ui/
-│   ├── autenticacao/
-│   ├── busca/
-│   ├── configuracoes/
-│   ├── navegacao/
-│   ├── perfis/
-│   └── transacoes/
-├── bd/
-│   └── smart/
-│       ├── conexao.steps.ts
-│       └── tabelas/process.steps.ts
-└── common/
-    └── case.steps.ts
+## Tags de execução
+
+Cada cenário pode participar de mais de uma campanha sem ser duplicado fisicamente:
+
+```gherkin
+@case-INT-100-I2
+@int-100
+@acceptance
+@regression
+@viewonly
+@permission-intelligence_view_only
 ```
 
-Regra de leitura:
+- `@case-*`: ID estável da automação e seletor de `qa run --case-id`.
+- `@int-*`: ticket Jira.
+- `@acceptance`: validação de aceitação por ticket.
+- `@regression`: regressão geral.
+- `@smoke`: smoke.
+- `@release-*`: release.
+- `@qase-*`: reservado para o ID real do caso no Qase depois da criação/importação; nunca inventar esse valor.
 
-- API: **operação → recurso** (`buscar/perfis`, `consultar/transacoes`, `escrever/perfis`).
-- UI: **tela/área → comportamento** (`perfis/consulta`, `transacoes/edicao`).
-- BD: **banco → tabela** (`smart/tabelas/process`).
-- `@positive`, `@negative`, `@regression`, `@smoke`, release, ticket e permissão são tags; não são diretórios.
+## Execução pelo QA Orchestrator
 
-## POM e Utils
+A sintaxe oficial do CLI é `qa run --project <id> <capability> [flags]`.
 
-O POM é a camada visual reutilizável. Cada área deve manter `*.actions.ts` para ações/asserções de UI e `*.locators.ts` para elementos da tela.
+```powershell
+# Aceitação completa do INT-100
+qa run --project intelligence acceptance --ticket INT-100
 
-`utils/` contém implementação não visual: clientes e contratos de API, autenticação, banco, massa e integrações. Os testes em `steps/` chamam POM ou Utils; não duplicam essas funções.
+# Apenas os casos regressivos do INT-100
+qa run --project intelligence regression --ticket INT-100
 
-Fluxo principal:
+# Um caso específico da regressão
+qa run --project intelligence regression --case-id API-POS-PROFILE-VIEWONLY-01
+
+# Regressão completa
+qa run --project intelligence regression
+
+# Smoke completo
+qa run --project intelligence smoke
+```
+
+Para Qase, `--qase` significa uma execução dedicada e `--qase-run-id <ID>` aponta para uma Test Run existente. Esse ID é da **run**, não do caso. O ID do caso Qase será mantido em `@qase-<ID>` quando os casos forem criados.
+
+## Execução direta no projeto
+
+```powershell
+npm run test:feature -- features/intelligence/ui/perfis/consulta.feature
+npm run test:steps -- steps/intelligence/api/consultar/perfis.steps.ts
+npm run test:case -- API-POS-PROFILE-VIEWONLY-01
+npm run test:tag -- @int-100
+```
+
+Use `--dry-run` para validar seleção/mapeamento e `--headed` para UI visível.
+
+## Fluxo
 
 ```text
 FEATURE -> STEP -> POM   (UI)
                 -> UTILS (API/BD/AUTH/DATA)
 ```
 
-## Como executar
-
-Por Feature:
-
-```powershell
-npm run test:feature -- features/intelligence/ui/perfis/consulta.feature
-```
-
-Por arquivo de Steps:
-
-```powershell
-npm run test:steps -- steps/intelligence/api/consultar/perfis.steps.ts
-```
-
-Por caso:
-
-```powershell
-npm run test:case -- API-POS-PROFILE-VIEWONLY-01
-```
-
-Por tag/ticket/suite:
-
-```powershell
-npm run test:tag -- @int-100
-npm run test:tag -- @smoke
-```
-
-Para somente validar o mapeamento, adicione `--dry-run`. Para UI visível, adicione `--headed`.
-
-```powershell
-npm run test:feature -- features/intelligence/ui/perfis/consulta.feature --dry-run
-npm run test:steps -- steps/intelligence/ui/perfis/consulta.steps.ts --headed
-```
-
-## Tags
-
-```gherkin
-@regression @smoke @release-5.5.0.5062
-@int-100 @viewonly @permission-intelligence_view_only
-```
-
-- `@regression`, `@smoke`, `@destructive`: suíte/estratégia.
-- `@release-*`, `@release-unassigned`, `@introduced-in-*`: rastreabilidade de release.
-- `@int-*`: ticket.
-- `@admin`, `@viewonly`, `@no-access`: perfil usado.
-- `@permission-*`: permissão técnica comprovada.
-- `@positive`, `@negative`: natureza do cenário.
-
-## Execução completa
-
-```powershell
-npm install
-npx playwright install chromium
-npm run typecheck
-npm run validar:estrutura
-npm run test:smoke
-npm run test:regression
-npm run test:destructive
-npm run test:release
-npm run massa:smart
-```
-
-Para INT-100:
-
-```powershell
-npm run test:cucumber:int100:dry
-npm run test:cucumber:int100
-```
-
-`build:cucumber` sempre remove `.cucumber-dist` antes de compilar. Isso evita que Steps movidos ou apagados permaneçam como JavaScript antigo e sejam carregados em duplicidade pelo Cucumber.
-
-## Regras
-
-- Features: camada + domínio real da aplicação.
-- Steps API: operação + recurso.
-- Steps UI: tela/área da aplicação.
-- Steps BD: banco + tabela.
-- UI reutilizável: POM.
-- API/BD/auth/data: Utils.
-- Ausência de conta, permissão, massa ou contrato verificável falha explicitamente como `BLOQUEADO`.
-- Nenhum teste deve aceitar HTTP 500 apenas para ficar verde.
-- Banco SMART é somente leitura; comandos de escrita são bloqueados antes de alcançar o banco.
-- Qase só recebe resultado depois da execução funcional real.
+Qase só recebe resultado depois da execução funcional real. HTTP 500 não é aceito apenas para deixar o teste verde. Banco SMART permanece somente leitura.

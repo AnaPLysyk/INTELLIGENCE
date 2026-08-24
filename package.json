@@ -11,6 +11,7 @@
     "massa:smart": "npm run build:cucumber && node .cucumber-dist/scripts/generate-mass.js",
     "test:list": "node orchestrator.cjs regression --list",
     "test:smoke": "node orchestrator.cjs smoke",
+    "test:acceptance": "node orchestrator.cjs acceptance",
     "test:regression": "node orchestrator.cjs regression",
     "test:destructive": "node orchestrator.cjs destructive",
     "test:release": "node orchestrator.cjs release",

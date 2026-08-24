@@ -5,6 +5,7 @@
   "commands": {
     "validate": "npm run validar",
     "smoke": "npm run test:smoke",
+    "acceptance": "npm run test:acceptance",
     "regression": "npm run test:regression",
     "release": "npm run test:release",
     "scheduled": "npm run test:scheduled",
@@ -24,6 +25,7 @@
   },
   "results": {
     "smoke": { "dir": "test-results", "filename": "qa-result.json" },
+    "acceptance": { "dir": "test-results", "filename": "qa-result.json" },
     "regression": { "dir": "test-results", "filename": "qa-result.json" },
     "release": { "dir": "test-results", "filename": "qa-result.json" },
     "scheduled": { "dir": "test-results", "filename": "qa-result.json" }
