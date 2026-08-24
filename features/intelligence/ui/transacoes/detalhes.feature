@@ -5,14 +5,16 @@ Funcionalidade: Detalhes da transação
   Quero abrir uma transação diretamente pelo TGUID
   Para consultar seus detalhes conforme meu nível de acesso
 
-  @positive @acceptance @regression @smoke @int-100 @case-INT-100-BASELINE @release-unassigned @admin @permission-intelligence_user
+  @positive @acceptance @regression @smoke @int-100 @admin @permission-intelligence_user @case-INT-100-BASELINE
   Cenário: Abertura de transação por deep-link com permissão de escrita
-    Dado que o caso "INT-100-BASELINE" está preparado
-    Quando executo o comportamento automatizado do caso
-    Então o contrato automatizado deve ser atendido
+    Dado que sou usuário administrador
+    E acesso deep-link de transação com TGUID válido
+    Quando a página carrega
+    Então visualizo transação com controles de edição habilitados
 
-  @positive @acceptance @regression @int-100 @case-INT-100-I1 @release-unassigned @viewonly @permission-intelligence_view_only @readonly
+  @positive @acceptance @regression @int-100 @viewonly @permission-intelligence_view_only @readonly @case-INT-100-I1
   Cenário: Abertura de transação por deep-link em modo somente leitura
-    Dado que o caso "INT-100-I1" está preparado
-    Quando executo o comportamento automatizado do caso
-    Então o contrato automatizado deve ser atendido
+    Dado que sou usuário view-only
+    E acesso deep-link de transação com TGUID válido
+    Quando a página carrega
+    Então visualizo transação sem controles de edição

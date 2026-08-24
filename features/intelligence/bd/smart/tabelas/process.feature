@@ -5,20 +5,32 @@ Funcionalidade: Tabela Process como fonte de massa
   Quero consultar a tabela Process somente em modo leitura
   Para localizar TGUID e PGUID sem risco de alterar a origem
 
-  Esquema do Cenário: <id>
-    Dado que o caso "<id>" está preparado
-    Quando executo o comportamento automatizado do caso
-    Então o contrato automatizado deve ser atendido
+  @positive @regression @release-5.5.0.5062 @int-17 @case-BD-POS-MASSA-01
+  Cenário: Seleção de processos como massa de teste
+    Dado que tenho conexão de leitura ao banco SMART
+    Quando consulto tabela Process para massa
+    Então obtenho processos válidos para teste
 
-    @positive @regression @release-5.5.0.5062 @int-17
-    Exemplos: Seleção de processos como massa de teste
-      | id              |
-      | BD-POS-MASSA-01 |
+  @negative @regression @destructive @security @release-5.5.0.5062 @case-BD-DES-INSERT-01
+  Cenário: Bloqueio de INSERT na tabela Process
+    Dado que tenho credenciais de leitura
+    Quando executo INSERT na tabela Process
+    Então recebo erro de permissão
 
-    @negative @regression @destructive @security @release-5.5.0.5062
-    Exemplos: Bloqueio de INSERT, UPDATE, DELETE e stacked queries
-      | id                |
-      | BD-DES-INSERT-01  |
-      | BD-DES-UPDATE-01  |
-      | BD-DES-DELETE-01  |
-      | BD-DES-STACKED-01 |
+  @negative @regression @destructive @security @release-5.5.0.5062 @case-BD-DES-UPDATE-01
+  Cenário: Bloqueio de UPDATE na tabela Process
+    Dado que tenho credenciais de leitura
+    Quando executo UPDATE na tabela Process
+    Então recebo erro de permissão
+
+  @negative @regression @destructive @security @release-5.5.0.5062 @case-BD-DES-DELETE-01
+  Cenário: Bloqueio de DELETE na tabela Process
+    Dado que tenho credenciais de leitura
+    Quando executo DELETE na tabela Process
+    Então recebo erro de permissão
+
+  @negative @regression @destructive @security @release-5.5.0.5062 @case-BD-DES-STACKED-01
+  Cenário: Bloqueio de stacked queries na tabela Process
+    Dado que tenho credenciais de leitura
+    Quando executo stacked query com comando malicioso
+    Então recebo erro ou query é bloqueada

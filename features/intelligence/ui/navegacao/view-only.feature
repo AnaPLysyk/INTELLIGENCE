@@ -5,17 +5,15 @@ Funcionalidade: Navegação do modo somente leitura
   Quero retornar para a tela informativa pelas rotas de navegação permitidas
   Para permanecer dentro do fluxo autorizado
 
-  Esquema do Cenário: <id>
-    Dado que o caso "<id>" está preparado
-    Quando executo o comportamento automatizado do caso
-    Então o contrato automatizado deve ser atendido
+  @acceptance @regression @int-100 @not-found @case-INT-100-I7
+  Cenário: Redirecionamento de 404 para tela inicial
+    Dado que sou usuário view-only
+    Quando acesso uma rota não existente
+    Então sou redirecionado para a página inicial
 
-    @acceptance @regression @int-100 @case-INT-100-I7 @release-unassigned @not-found
-    Exemplos: Redirecionamento de 404 para tela inicial
-      | id         |
-      | INT-100-I7 |
-
-    @acceptance @regression @int-100 @case-INT-100-I6 @release-unassigned @header
-    Exemplos: Navegação para home pelo clique no logo
-      | id         |
-      | INT-100-I6 |
+  @acceptance @regression @int-100 @header @case-INT-100-I6
+  Cenário: Navegação para home pelo clique no logo
+    Dado que sou usuário view-only
+    E estou em qualquer página da aplicação
+    Quando clico no logo no header
+    Então sou navegado para a página inicial

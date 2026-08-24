@@ -5,8 +5,8 @@ Funcionalidade: Configurações pessoais
   Quero continuar acessando configurações pessoais permitidas
   Para ajustar a visualização sem obter funções de escrita de negócio
 
-  @positive @acceptance @regression @int-100 @case-INT-100-I4 @release-unassigned @viewonly @permission-intelligence_view_only
+  @positive @acceptance @regression @int-100 @viewonly @permission-intelligence_view_only @case-INT-100-I4
   Cenário: Acesso a configurações de tema e preferências pessoais
-    Dado que o caso "INT-100-I4" está preparado
-    Quando executo o comportamento automatizado do caso
-    Então o contrato automatizado deve ser atendido
+    Dado que sou usuário view-only
+    Quando acesso menu de configurações
+    Então consigo alterar preferências de tema e visualização

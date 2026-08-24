@@ -5,8 +5,8 @@ Funcionalidade: Conexão somente leitura com o banco SMART
   Quero validar a conexão usada como fonte de massa
   Para garantir acesso ao banco sem alterar dados
 
-  @positive @regression @smoke @release-5.5.0.5062
+  @positive @regression @smoke @release-5.5.0.5062 @case-BD-POS-CONNECTION-01
   Cenário: Conexão de leitura com banco SMART disponível
-    Dado que o caso "BD-POS-CONNECTION-01" está preparado
-    Quando executo o comportamento automatizado do caso
-    Então o contrato automatizado deve ser atendido
+    Dado que tenho credenciais de leitura do banco SMART
+    Quando executo consulta de teste
+    Então recebo resultado sem erro

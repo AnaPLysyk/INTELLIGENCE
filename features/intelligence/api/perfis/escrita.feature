@@ -5,8 +5,8 @@ Funcionalidade: Proteção das operações de escrita de perfil
   Quero ter operações de escrita bloqueadas
   Para impedir alteração de dados sem permissão explícita
 
-  @negative @acceptance @coverage-gap @int-100 @case-INT-100-WRITE-ENDPOINTS-01 @release-unassigned @viewonly @permission-intelligence_view_only
+  @negative @acceptance @coverage-gap @int-100 @viewonly @permission-intelligence_view_only @case-INT-100-WRITE-ENDPOINTS-01
   Cenário: Bloqueio de escrita em endpoints de perfil para usuário view-only
-    Dado que o caso "INT-100-WRITE-ENDPOINTS-01" está preparado
-    Quando executo o comportamento automatizado do caso
-    Então o contrato automatizado deve ser atendido
+    Dado que tenho permissão view-only
+    Quando executo requisições POST/PUT para endpoints de escrita
+    Então todas as requisições retornam status 403
