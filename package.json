@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build:cucumber": "tsc -p tsconfig.cucumber.json",
+    "clean:cucumber": "node scripts/clean-cucumber.cjs",
+    "build:cucumber": "npm run clean:cucumber && tsc -p tsconfig.cucumber.json",
     "validar:estrutura": "node scripts/validate-structure.cjs",
     "validar": "npm run typecheck && npm run validar:estrutura && node orchestrator.cjs regression --list",
     "massa:smart": "npm run build:cucumber && node .cucumber-dist/scripts/generate-mass.js",

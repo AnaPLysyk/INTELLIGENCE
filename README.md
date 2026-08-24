@@ -4,44 +4,50 @@ A automação do GBS Intelligence usa Cucumber como runner e Playwright como bib
 
 ## Estrutura
 
+As Features representam o comportamento por camada/domínio. Os Steps representam a responsabilidade técnica real dentro de cada camada.
+
 ```text
-features/intelligence/api/            contratos HTTP organizados pelo domínio da API
-features/intelligence/ui/             comportamentos visuais organizados pela estrutura da aplicação
-features/intelligence/bd/             persistência/fonte de dados organizada por banco e tabela
-steps/intelligence/api/positivo/      testes executáveis positivos de API
-steps/intelligence/api/negativo/      testes executáveis negativos de API
-steps/intelligence/ui/positivo/       testes executáveis positivos de UI
-steps/intelligence/ui/negativo/       testes executáveis negativos de UI
-steps/intelligence/bd/positivo/       testes executáveis positivos de banco
-steps/intelligence/bd/negativo/       testes executáveis negativos de banco
-pom/intelligence/                     Page Objects, locators e ações de UI
-utils/                                API, banco, auth, dados, integrações e provisionamento
-config/                               configuração de ambiente
-cucumber/                             World e Hooks
-scripts/                              validação, execução por ticket e relatórios
+steps/intelligence/
+├── api/
+│   ├── autenticar/
+│   │   └── sessao.steps.ts
+│   ├── buscar/
+│   │   └── perfis.steps.ts
+│   ├── consultar/
+│   │   ├── campos.steps.ts
+│   │   ├── perfis.steps.ts
+│   │   └── transacoes.steps.ts
+│   └── escrever/
+│       └── perfis.steps.ts
+├── ui/
+│   ├── autenticacao/acesso.steps.ts
+│   ├── busca/pesquisa.steps.ts
+│   ├── configuracoes/preferencias.steps.ts
+│   ├── navegacao/view-only.steps.ts
+│   ├── perfis/{consulta,edicao}.steps.ts
+│   └── transacoes/{detalhes,edicao,exportacao}.steps.ts
+├── bd/
+│   └── smart/
+│       ├── conexao.steps.ts
+│       └── tabelas/process.steps.ts
+└── common/
+    └── case.steps.ts
 ```
 
-Exemplo de Feature por camada/domínio:
+Regra de leitura:
+
+- API: **operação → recurso** (`buscar/perfis`, `consultar/transacoes`, `escrever/perfis`).
+- UI: **tela/área → comportamento** (`perfis/consulta`, `transacoes/edicao`).
+- BD: **banco → tabela** (`smart/tabelas/process`).
+- `@positive`, `@negative`, `@regression`, `@smoke`, release, ticket e permissão são tags; não são diretórios.
+
+Features seguem o domínio da aplicação:
 
 ```text
 features/intelligence/
 ├── api/
-│   ├── autenticacao/sessao.feature
-│   ├── busca/perfis.feature
-│   ├── campos/catalogo.feature
-│   ├── perfis/{consulta,escrita}.feature
-│   └── transacoes/consulta.feature
 ├── ui/
-│   ├── autenticacao/acesso.feature
-│   ├── busca/pesquisa.feature
-│   ├── configuracoes/preferencias.feature
-│   ├── navegacao/view-only.feature
-│   ├── perfis/{consulta,edicao}.feature
-│   └── transacoes/{detalhes,edicao,exportacao}.feature
 └── bd/
-    └── smart/
-        ├── conexao.feature
-        └── tabelas/process.feature
 ```
 
 Fluxo principal:
@@ -53,8 +59,6 @@ FEATURE -> STEP -> POM   (UI)
 
 ## Tags
 
-Diretórios representam a aplicação. Critérios de execução ficam nas tags:
-
 ```gherkin
 @regression @smoke @release-5.5.0.5062
 @int-100 @viewonly @permission-intelligence_view_only
@@ -65,9 +69,7 @@ Diretórios representam a aplicação. Critérios de execução ficam nas tags:
 - `@int-*`: ticket.
 - `@admin`, `@viewonly`, `@no-access`: perfil usado.
 - `@permission-*`: permissão técnica comprovada.
-- `@table-*`: tabela envolvida quando a Feature é de BD.
-
-Não criar diretórios por regressão, smoke, release, ticket ou grupo de permissão.
+- `@positive`, `@negative`: natureza do cenário.
 
 ## Execução
 
@@ -90,10 +92,14 @@ npm run test:cucumber:int100:dry
 npm run test:cucumber:int100
 ```
 
+`build:cucumber` sempre remove `.cucumber-dist` antes de compilar. Isso evita que Steps movidos ou apagados permaneçam como JavaScript antigo e sejam carregados em duplicidade pelo Cucumber.
+
 ## Regras
 
 - Features: camada + domínio real da aplicação.
-- Steps: testes executáveis separados por camada e positivo/negativo.
+- Steps API: operação + recurso.
+- Steps UI: tela/área da aplicação.
+- Steps BD: banco + tabela.
 - UI reutilizável: POM.
 - API/BD/auth/data: Utils.
 - Ausência de conta, permissão, massa ou contrato verificável falha explicitamente como `BLOQUEADO`.

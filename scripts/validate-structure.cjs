@@ -45,22 +45,32 @@ for (const feature of features) {
 if (!features.length) errors.push('nenhuma Feature encontrada em features/intelligence/{api,ui,bd}');
 
 const steps = relativos.filter((arquivo) => arquivo.startsWith('steps/') && arquivo.endsWith('.steps.ts'));
-const stepPattern = /^steps\/intelligence\/(common\/.+|(?:api|ui|bd)\/.+)\.steps\.ts$/;
-const pastasStepProibidas = /\/steps\/intelligence\/(?:api|ui|bd)\/(?:positivo|negativo)\//i;
+const commonPattern = /^steps\/intelligence\/common\/.+\.steps\.ts$/;
+const apiPattern = /^steps\/intelligence\/api\/(autenticar|buscar|consultar|escrever)\/[^/]+\.steps\.ts$/;
+const uiPattern = /^steps\/intelligence\/ui\/[^/]+\/[^/]+\.steps\.ts$/;
+const bdPattern = /^steps\/intelligence\/bd\/[^/]+\/(?:conexao|tabelas\/[^/]+)\.steps\.ts$/;
+const pastasStepProibidas = /\/steps\/intelligence\/(?:api|ui|bd)\/(?:positivo|negativo|regressao|regression)\//i;
+
 for (const step of steps) {
-  if (!stepPattern.test(step)) errors.push(`step fora da arquitetura: ${step}`);
-  if (pastasStepProibidas.test(`/${step}`)) errors.push(`step usa positivo/negativo como diretorio: ${step}`);
+  const valido = commonPattern.test(step) || apiPattern.test(step) || uiPattern.test(step) || bdPattern.test(step);
+  if (!valido) errors.push(`step fora da arquitetura por responsabilidade: ${step}`);
+  if (pastasStepProibidas.test(`/${step}`)) errors.push(`step usa metadado como diretorio: ${step}`);
+  if (/\/regressao\.steps\.ts$/i.test(step)) errors.push(`step generico de regressao nao permitido: ${step}`);
 }
 if (!steps.length) errors.push('nenhum Step Definition TypeScript encontrado');
 
 const plan = JSON.parse(fs.readFileSync(path.join(root, 'automation.plan.json'), 'utf8'));
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/automation.yml'), 'utf8');
 for (const [name, suite] of Object.entries(plan.suites)) {
-  if (suite.schedule && !workflow.includes(`cron: "${suite.schedule}"`)) errors.push(`agenda da suite ${name} nao esta refletida no workflow`);
+  if (suite.schedule && !workflow.includes(`cron: "${suite.schedule}"`)) {
+    errors.push(`agenda da suite ${name} nao esta refletida no workflow`);
+  }
 }
 
 if (errors.length) {
   console.error(errors.map((erro) => `- ${erro}`).join('\n'));
   process.exit(1);
 }
-console.log(`Estrutura valida: ${features.length} Features por camada/dominio e ${steps.length} arquivos de Steps; sem residuos legados ou pastas positivo/negativo.`);
+console.log(
+  `Estrutura valida: ${features.length} Features e ${steps.length} arquivos de Steps organizados por responsabilidade; sem residuos legados.`,
+);
