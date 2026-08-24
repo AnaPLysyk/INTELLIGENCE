@@ -132,14 +132,35 @@ const apiPattern = /^steps\/intelligence\/api\/(autenticar|buscar|consultar|escr
 const uiPattern = /^steps\/intelligence\/ui\/[^/]+\/[^/]+\.steps\.ts$/;
 const bdPattern = /^steps\/intelligence\/bd\/[^/]+\/(?:conexao|tabelas\/[^/]+)\.steps\.ts$/;
 const pastasStepProibidas = /\/steps\/intelligence\/(?:api|ui|bd)\/(?:positivo|negativo|regressao|regression)\//i;
+const casosRegistrados = new Map();
 
 for (const step of steps) {
   const valido = commonPattern.test(step) || apiPattern.test(step) || uiPattern.test(step) || bdPattern.test(step);
   if (!valido) errors.push(`step fora da arquitetura por responsabilidade: ${step}`);
   if (pastasStepProibidas.test(`/${step}`)) errors.push(`step usa metadado como diretorio: ${step}`);
   if (/\/regressao\.steps\.ts$/i.test(step)) errors.push(`step generico de regressao nao permitido: ${step}`);
+
+  const conteudo = fs.readFileSync(path.join(root, step), 'utf8');
+  const regexCaso = /\b(?:registrarCaso|teste)\(\s*['"]([^'"]+)['"]/g;
+  for (const match of conteudo.matchAll(regexCaso)) {
+    const caseId = match[1].trim();
+    const anterior = casosRegistrados.get(caseId);
+    if (anterior) errors.push(`caso executavel ${caseId} registrado mais de uma vez: ${anterior} e ${step}`);
+    else casosRegistrados.set(caseId, step);
+  }
 }
 if (!steps.length) errors.push('nenhum Step Definition TypeScript encontrado');
+
+for (const [caseId, origemFeature] of casesEncontrados) {
+  if (!casosRegistrados.has(caseId)) {
+    errors.push(`@case-${caseId} nao possui implementacao executavel em Steps: ${origemFeature}`);
+  }
+}
+for (const [caseId, origemStep] of casosRegistrados) {
+  if (!casesEncontrados.has(caseId)) {
+    errors.push(`caso executavel ${caseId} ficou orfao sem Feature BDD: ${origemStep}`);
+  }
+}
 
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'qa.project.json'), 'utf8'));
 if (manifest.ranger) errors.push('schema Ranger invalido: use rangerBaseline, rangerProfiles e rangerSuites no topo do qa.project.json');
@@ -168,5 +189,5 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(
-  `Estrutura valida: ${features.length} Features, ${casesEncontrados.size} cenarios BDD com @case unico e ${steps.length} arquivos de Steps; Ranger INT-100 preservado; sem residuos legados.`,
+  `Estrutura valida: ${features.length} Features, ${casesEncontrados.size} cenarios BDD com @case unico, ${casosRegistrados.size} casos executaveis e ${steps.length} arquivos de Steps; Ranger INT-100 preservado; sem residuos legados.`,
 );
