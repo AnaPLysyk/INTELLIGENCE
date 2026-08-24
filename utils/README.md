@@ -1,13 +1,16 @@
 # Utils
 
-Infraestrutura que não representa uma página da aplicação.
+Infraestrutura não visual usada pelos Steps.
 
 ```text
 utils/
-  api/       -> clients HTTP
-  database/  -> consultas/repositories de banco
-  auth/      -> credenciais e resolução de perfis
-  data/      -> massas e dados de teste
+  api/           clientes HTTP e parsing de contratos
+  auth/          resolução de perfis e credenciais
+  database/      consultas somente leitura
+  data/          contratos e arquivos de massa
+  integrations/  clientes SMART/GBDS
+  provisioning/  descoberta e geração segura de massa
+  common/        infraestrutura compartilhada de execução
 ```
 
-Nesta primeira etapa os arquivos são fachadas para o código existente em `support/`, evitando uma migração grande antes da regressão.
+`utils/` é implementação canônica; não existem fachadas apontando para uma árvore `support/`.
