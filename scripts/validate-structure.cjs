@@ -38,6 +38,39 @@ function passosDoCenario(linhas, inicio) {
   return passos;
 }
 
+function registrarIdExecutavel(mapa, caseId, step) {
+  const id = String(caseId || '').trim();
+  if (!id) return;
+  const anterior = mapa.get(id);
+  if (anterior) errors.push(`caso executavel ${id} registrado mais de uma vez: ${anterior} e ${step}`);
+  else mapa.set(id, step);
+}
+
+function extrairCasosExecutaveis(conteudo, step) {
+  const ids = new Set();
+
+  // Forma direta: registrarCaso('API-...') / teste('API-...').
+  for (const match of conteudo.matchAll(/\b(?:registrarCaso|teste)\(\s*['"]([^'"]+)['"]/g)) {
+    ids.add(match[1].trim());
+  }
+
+  // Loops estáticos: registrarCaso(caso.id, ...) com objetos { id: 'API-...' }.
+  if (/\b(?:registrarCaso|teste)\(\s*caso\.id\b/.test(conteudo)) {
+    for (const match of conteudo.matchAll(/\bid\s*:\s*['"]((?:API|BD|UI|INT)-[^'"]+)['"]/g)) {
+      ids.add(match[1].trim());
+    }
+  }
+
+  // Loops estáticos em tuplas: for (const [id, ...] ...) registrarCaso(id, ...).
+  if (/\b(?:registrarCaso|teste)\(\s*id\b/.test(conteudo)) {
+    for (const match of conteudo.matchAll(/\[\s*['"]((?:API|BD|UI|INT)-[^'"]+)['"]\s*,/g)) {
+      ids.add(match[1].trim());
+    }
+  }
+
+  return [...ids].map((id) => ({ id, step }));
+}
+
 for (const legado of ['support', 'tests', 'playwright.config.ts']) {
   if (fs.existsSync(path.join(root, legado))) errors.push(`residuo legado encontrado: ${legado}`);
 }
@@ -141,12 +174,8 @@ for (const step of steps) {
   if (/\/regressao\.steps\.ts$/i.test(step)) errors.push(`step generico de regressao nao permitido: ${step}`);
 
   const conteudo = fs.readFileSync(path.join(root, step), 'utf8');
-  const regexCaso = /\b(?:registrarCaso|teste)\(\s*['"]([^'"]+)['"]/g;
-  for (const match of conteudo.matchAll(regexCaso)) {
-    const caseId = match[1].trim();
-    const anterior = casosRegistrados.get(caseId);
-    if (anterior) errors.push(`caso executavel ${caseId} registrado mais de uma vez: ${anterior} e ${step}`);
-    else casosRegistrados.set(caseId, step);
+  for (const caso of extrairCasosExecutaveis(conteudo, step)) {
+    registrarIdExecutavel(casosRegistrados, caso.id, caso.step);
   }
 }
 if (!steps.length) errors.push('nenhum Step Definition TypeScript encontrado');
