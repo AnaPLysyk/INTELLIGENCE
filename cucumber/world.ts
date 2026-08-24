@@ -13,7 +13,7 @@ import { validarAmbienteIntegracao } from '../config/environment';
 import { IntelligencePage, type CredenciaisIntelligence } from '../pom/intelligence/core/intelligence.page';
 import { obterCredenciaisParaPerfilIntelligence } from '../utils/auth/intelligence';
 import { gerarMassaDeBuscaComDadosDoSmart } from '../utils/provisioning/intelligence';
-import type { ArquivoMassaBusca } from '../utils/data/intelligence';
+import { lerMassaBusca, type ArquivoMassaBusca } from '../utils/data/intelligence';
 
 export type PerfilCucumber = 'admin' | 'view-only' | 'sem-permissao';
 
@@ -26,6 +26,12 @@ async function navegador(): Promise<Browser> {
     navegadorCompartilhado = await chromium.launch({ headless });
   }
   return navegadorCompartilhado;
+}
+
+function deveReutilizarMassa(): boolean {
+  return ['1', 'true', 'yes', 'sim'].includes(
+    String(process.env.INTELLIGENCE_REUTILIZAR_MASSA || '').trim().toLowerCase(),
+  );
 }
 
 export class IntelligenceWorld extends World {
@@ -62,7 +68,19 @@ export class IntelligenceWorld extends World {
   async garantirMassa(): Promise<ArquivoMassaBusca> {
     if (!massaDaExecucao) {
       validarAmbienteIntegracao();
-      massaDaExecucao = gerarMassaDeBuscaComDadosDoSmart(await this.api());
+      if (deveReutilizarMassa()) {
+        const massaExistente = lerMassaBusca(true);
+        if (!massaExistente) {
+          throw new Error(
+            'BLOQUEADO: INTELLIGENCE_REUTILIZAR_MASSA=true, mas o arquivo de massa nao existe. '
+            + 'A fase admin precisa gerar a massa antes das fases view-only/no-access.',
+          );
+        }
+        console.log('INTELLIGENCE_MASSA|mode=reuse|source=file');
+        massaDaExecucao = Promise.resolve(massaExistente);
+      } else {
+        massaDaExecucao = gerarMassaDeBuscaComDadosDoSmart(await this.api());
+      }
     }
     return massaDaExecucao;
   }
