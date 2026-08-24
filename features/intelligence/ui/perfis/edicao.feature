@@ -5,8 +5,9 @@ Funcionalidade: Edição de perfil
   Quero preservar os valores apresentados ao abrir a edição
   Para evitar perda ou alteração involuntária de dados
 
-  @positive @regression @release-5.5.0.5062 @int-40 @introduced-in-1.8.2 @admin @date
-  Cenário: Campo de data permanece preenchido ao editar um perfil
-    Dado que o caso "INT-40-UI-02" está preparado
-    Quando executo o comportamento automatizado do caso
-    Então o contrato automatizado deve ser atendido
+  @positive @regression @release-5.5.0.5062 @int-40 @introduced-in-1.8.2 @admin @date @case-INT-40-UI-02
+  Cenário: Campo de data permanece preenchido ao abrir a edição do perfil
+    Dado que sou usuário administrador
+    E acesso um perfil com campo de data preenchido
+    Quando abro a edição do perfil
+    Então o campo de data permanece preenchido
