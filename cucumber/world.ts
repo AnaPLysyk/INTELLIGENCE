@@ -22,7 +22,7 @@ let massaDaExecucao: Promise<ArquivoMassaBusca> | undefined;
 
 async function navegador(): Promise<Browser> {
   if (!navegadorCompartilhado) {
-    const headless = !['0', 'false', 'no'].includes(String(process.env.PW_HEADLESS || 'true').toLowerCase());
+    const headless = !['0', 'false', 'no'].includes(String(process.env.PW_HEADLESS || 'false').toLowerCase());
     navegadorCompartilhado = await chromium.launch({ headless });
   }
   return navegadorCompartilhado;
