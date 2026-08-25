@@ -28,6 +28,11 @@ import {
 type ProcessoIndexado = { ProcessId: number; Tguid: string; Pguid: string };
 type CampoEncontrado = { nome: string; valor: string };
 type Candidata = { tipo: string; item: EntradaMassaBusca };
+type EscopoMassa = {
+  tiposAlvo: string[];
+  tiposObrigatorios: string[];
+  tiposDescoberta: Set<string>;
+};
 
 const ALIASES: Record<string, string[]> = {
   cpf: ['cpf', 'cpfcidadao'],
@@ -35,6 +40,18 @@ const ALIASES: Record<string, string[]> = {
   birthdate: ['birthdate', 'birth_date', 'datanascimento', 'datadenascimento', 'data de nascimento'],
   'EXTERNAL.ID': ['external.id', 'externalid', 'external_id', 'externalidentifier', 'external id'],
   cib: ['cib', 'cib_exid', 'cibexid'],
+};
+
+const MASSA_POR_CASE_ID: Record<string, string[]> = {
+  'API-POS-CPF-01': ['cpf'],
+  'API-POS-EXTERNAL-01': ['EXTERNAL.ID'],
+  'API-POS-BIRTHDATE-01': ['birthdate'],
+  'API-POS-NAME-01': ['name'],
+  'API-POS-CIB-01': ['cib'],
+  'API-POS-PAGINATION-01': ['cpf'],
+  'API-NEG-PAGINATION-01': ['cpf'],
+  'API-NEG-COMMON-06': ['cpf'],
+  'API-POS-PROFILE-VIEWONLY-01': ['PGUID'],
 };
 
 function normalizar(nome: string): string {
@@ -119,6 +136,37 @@ function variacoesValor(tipo: string, valor: string): string[] {
   return [...valores].filter(Boolean);
 }
 
+function listaEnv(nome: string, padrao: string): string[] {
+  return (process.env[nome] || padrao)
+    .split(',')
+    .map((tipo) => tipo.trim())
+    .filter(Boolean);
+}
+
+function escopoMassaDaExecucao(): EscopoMassa {
+  const caseId = process.env.QA_CASE_ID?.trim();
+  const tiposFiltrados = caseId ? MASSA_POR_CASE_ID[caseId] : undefined;
+  const tiposAlvo = tiposFiltrados
+    ? [...tiposFiltrados]
+    : listaEnv('INTELLIGENCE_MASSA_TIPOS', 'PGUID,TGUID,EXTERNAL.ID,cpf,birthdate,name,cib');
+  const tiposObrigatorios = tiposFiltrados
+    ? [...tiposFiltrados]
+    : listaEnv('INTELLIGENCE_MASSA_TIPOS_OBRIGATORIOS', 'PGUID,TGUID,cpf');
+  const tiposDescoberta = new Set(
+    tiposAlvo.filter((tipo) => !['PGUID', 'TGUID'].includes(tipo)),
+  );
+
+  if ([...tiposDescoberta].some((tipo) => ['name', 'birthdate', 'cib'].includes(tipo))) {
+    tiposDescoberta.add('cpf');
+  }
+
+  if (caseId && tiposFiltrados) {
+    console.log(`[massa] escopo filtrado: caseId=${caseId}|alvos=${tiposAlvo.join(',')}`);
+  }
+
+  return { tiposAlvo, tiposObrigatorios, tiposDescoberta };
+}
+
 async function carregarCatalogoBusca(
   request: APIRequestContext,
   sessionGuid: string,
@@ -140,17 +188,41 @@ async function carregarCatalogoBusca(
   return catalogo;
 }
 
+function chaveCandidata(candidata: Candidata): string {
+  return [
+    candidata.tipo,
+    candidata.item.seletor,
+    candidata.item.kind || '',
+    candidata.item.valor,
+  ].join('|');
+}
+
+function nomeErro(error_: unknown): string {
+  if (error_ instanceof Error) return error_.name || 'Error';
+  return typeof error_;
+}
+
 async function validarCandidata(
   request: APIRequestContext,
   candidata: Candidata,
   sessionGuid: string,
 ): Promise<{ disponivel: boolean; itens: unknown[] }> {
-  const resultado = await buscarPerfisIntelligence(
-    request,
-    payloadDaMassa(candidata.item),
-    sessionGuid,
-    { first: 0, size: 5 },
-  );
+  let resultado: Awaited<ReturnType<typeof buscarPerfisIntelligence>>;
+  try {
+    resultado = await buscarPerfisIntelligence(
+      request,
+      payloadDaMassa(candidata.item),
+      sessionGuid,
+      { first: 0, size: 5 },
+    );
+  } catch (error_) {
+    console.log(
+      `[massa] preflight indisponivel: tipo=${candidata.tipo}|origem=${candidata.item.origem}`
+      + `|name=${candidata.item.seletor}|kind=${candidata.item.kind}|erro=${nomeErro(error_)}`,
+    );
+    return { disponivel: false, itens: [] };
+  }
+
   const statusCount = resultado.count.response.status();
   const statusList = resultado.list.response.status();
 
@@ -189,9 +261,11 @@ function candidatasDeCampos(
   campos: CampoEncontrado[],
   esperado: IdentidadeEsperada,
   origem: EntradaMassaBusca['origem'],
+  tiposPermitidos: Set<string>,
 ): Candidata[] {
   const candidatas: Candidata[] = [];
   for (const tipo of ['cpf', 'name', 'birthdate', 'EXTERNAL.ID', 'cib']) {
+    if (!tiposPermitidos.has(tipo)) continue;
     const valor = encontrar(campos, tipo);
     if (!valor) continue;
     for (const variacao of variacoesValor(tipo, valor)) {
@@ -207,8 +281,15 @@ async function candidatasDoPerfilIntelligence(
   sessionGuid: string,
   catalogo: CampoBuscaIntelligence[],
   processo: ProcessoIndexado,
+  tiposPermitidos: Set<string>,
 ): Promise<Candidata[]> {
-  const resposta = await obterDetalhesPerfilIntelligence(request, String(processo.Pguid), sessionGuid);
+  let resposta: Awaited<ReturnType<typeof obterDetalhesPerfilIntelligence>>;
+  try {
+    resposta = await obterDetalhesPerfilIntelligence(request, String(processo.Pguid), sessionGuid);
+  } catch (error_) {
+    console.log(`[massa] profile/person indisponivel durante descoberta|erro=${nomeErro(error_)}`);
+    return [];
+  }
   if (resposta.response.status() !== 200) return [];
 
   const campos: CampoEncontrado[] = [];
@@ -222,27 +303,35 @@ async function candidatasDoPerfilIntelligence(
     dataNascimento: encontrar(campos, 'birthdate'),
     externalId: encontrar(campos, 'EXTERNAL.ID'),
   };
-  return candidatasDeCampos(catalogo, campos, esperado, 'INTELLIGENCE API');
+  return candidatasDeCampos(catalogo, campos, esperado, 'INTELLIGENCE API', tiposPermitidos);
 }
 
 function candidatasDosResultadosCpf(
   catalogo: CampoBuscaIntelligence[],
   itens: unknown[],
   esperado: IdentidadeEsperada,
+  tiposPermitidos: Set<string>,
 ): Candidata[] {
   const campos: CampoEncontrado[] = [];
   coletarCampos(itens, campos);
-  return candidatasDeCampos(catalogo, campos, esperado, 'INTELLIGENCE API');
+  return candidatasDeCampos(catalogo, campos, esperado, 'INTELLIGENCE API', tiposPermitidos);
 }
 
 async function aplicarCandidatas(
   request: APIRequestContext,
   candidatas: Candidata[],
   sessionGuid: string,
+  catalogo: CampoBuscaIntelligence[],
   buscas: Record<string, EntradaMassaBusca>,
+  tentadas: Set<string>,
+  tiposPermitidos: Set<string>,
 ): Promise<void> {
   for (const candidata of candidatas) {
-    if (buscas[candidata.tipo]) continue;
+    if (!tiposPermitidos.has(candidata.tipo) || buscas[candidata.tipo]) continue;
+    const chave = chaveCandidata(candidata);
+    if (tentadas.has(chave)) continue;
+    tentadas.add(chave);
+
     const resultado = await validarCandidata(request, candidata, sessionGuid);
     if (!resultado.disponivel) continue;
     buscas[candidata.tipo] = candidata.item;
@@ -252,13 +341,24 @@ async function aplicarCandidatas(
     );
 
     if (candidata.tipo === 'cpf') {
-      const derivadas = candidatasDosResultadosCpf(catalogoGlobal, resultado.itens, candidata.item.esperado);
-      await aplicarCandidatas(request, derivadas, sessionGuid, buscas);
+      const derivadas = candidatasDosResultadosCpf(
+        catalogo,
+        resultado.itens,
+        candidata.item.esperado,
+        tiposPermitidos,
+      );
+      await aplicarCandidatas(
+        request,
+        derivadas,
+        sessionGuid,
+        catalogo,
+        buscas,
+        tentadas,
+        tiposPermitidos,
+      );
     }
   }
 }
-
-let catalogoGlobal: CampoBuscaIntelligence[] = [];
 
 export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContext): Promise<ArquivoMassaBusca> {
   const limite = Number(process.env.SMART_MASSA_LIMITE_CANDIDATOS?.trim() || '30');
@@ -277,12 +377,9 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
   const tokenGbds = await autenticarGbds();
   const sessionGuid = await autenticarIntelligenceApi(request);
   const catalogo = await carregarCatalogoBusca(request, sessionGuid);
-  catalogoGlobal = catalogo;
+  const { tiposAlvo, tiposObrigatorios, tiposDescoberta } = escopoMassaDaExecucao();
   const buscas: Record<string, EntradaMassaBusca> = {};
-  const tiposAlvo = (process.env.INTELLIGENCE_MASSA_TIPOS || 'PGUID,TGUID,EXTERNAL.ID,cpf,birthdate,name,cib')
-    .split(',').map((tipo) => tipo.trim()).filter(Boolean);
-  const tiposObrigatorios = (process.env.INTELLIGENCE_MASSA_TIPOS_OBRIGATORIOS || 'PGUID,TGUID,cpf')
-    .split(',').map((tipo) => tipo.trim()).filter(Boolean);
+  const tentadas = new Set<string>();
   const concorrencia = Number(process.env.SMART_MASSA_CONCORRENCIA?.trim() || '5');
   if (!Number.isInteger(concorrencia) || concorrencia < 1 || concorrencia > 10) {
     throw new Error('CONFIGURACAO: SMART_MASSA_CONCORRENCIA deve estar entre 1 e 10.');
@@ -291,11 +388,18 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
   for (let inicio = 0; inicio < processos.length; inicio += concorrencia) {
     const lote = processos.slice(inicio, inicio + concorrencia);
     const resultados = await Promise.all(lote.map(async (processo) => {
-      const detalhes = await consultarProcessoSmart(request, token, processo.ProcessId);
       const campos: CampoEncontrado[] = [];
-      coletarCampos(detalhes, campos);
+      try {
+        coletarCampos(await consultarProcessoSmart(request, token, processo.ProcessId), campos);
+      } catch (error_) {
+        console.log(`[massa] SMART API indisponivel para candidato|erro=${nomeErro(error_)}`);
+      }
       if (!encontrar(campos, 'EXTERNAL.ID') || !encontrar(campos, 'cib')) {
-        coletarCampos(await consultarTransacaoGbds(tokenGbds, String(processo.Tguid)), campos);
+        try {
+          coletarCampos(await consultarTransacaoGbds(tokenGbds, String(processo.Tguid)), campos);
+        } catch (error_) {
+          console.log(`[massa] GBDS API indisponivel para candidato|erro=${nomeErro(error_)}`);
+        }
       }
       return { processo, campos };
     }));
@@ -310,31 +414,47 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
         dataNascimento: encontrar(campos, 'birthdate'),
         externalId: encontrar(campos, 'EXTERNAL.ID'),
       };
-      buscas.PGUID ??= entrada('PGUID', esperado.pguid, esperado, undefined, 'SMART.Process');
-      buscas.TGUID ??= entrada('TGUID', esperado.tguid, esperado, undefined, 'SMART.Process');
+
+      if (tiposAlvo.includes('PGUID')) {
+        buscas.PGUID ??= entrada('PGUID', esperado.pguid, esperado, undefined, 'SMART.Process');
+      }
+      if (tiposAlvo.includes('TGUID')) {
+        buscas.TGUID ??= entrada('TGUID', esperado.tguid, esperado, undefined, 'SMART.Process');
+      }
 
       await aplicarCandidatas(
         request,
-        candidatasDeCampos(catalogo, campos, esperado, 'SMART API'),
+        candidatasDeCampos(catalogo, campos, esperado, 'SMART API', tiposDescoberta),
         sessionGuid,
+        catalogo,
         buscas,
+        tentadas,
+        tiposDescoberta,
       );
       await aplicarCandidatas(
         request,
-        await candidatasDoPerfilIntelligence(request, sessionGuid, catalogo, processo),
+        await candidatasDoPerfilIntelligence(
+          request,
+          sessionGuid,
+          catalogo,
+          processo,
+          tiposDescoberta,
+        ),
         sessionGuid,
+        catalogo,
         buscas,
+        tentadas,
+        tiposDescoberta,
       );
     }
 
-    if (tiposAlvo.filter((tipo) => resolverCampoCatalogo(catalogo, tipo) || ['PGUID', 'TGUID'].includes(tipo))
-      .every((tipo) => buscas[tipo])) break;
+    if (tiposAlvo.every((tipo) => buscas[tipo])) break;
   }
 
   const tiposAusentes = tiposAlvo.filter((tipo) => !buscas[tipo]);
   const obrigatoriosAusentes = tiposObrigatorios.filter((tipo) => !buscas[tipo]);
   if (obrigatoriosAusentes.length > 0) {
-    throw new Error(`BLOQUEADO: o ambiente nao forneceu a massa central para: ${obrigatoriosAusentes.join(', ')}`);
+    throw new Error(`BLOQUEADO: o ambiente nao forneceu massa pesquisavel para: ${obrigatoriosAusentes.join(', ')}`);
   }
 
   const arquivo: ArquivoMassaBusca = {
@@ -349,6 +469,5 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
   fs.mkdirSync(path.dirname(destino), { recursive: true });
   fs.writeFileSync(temporario, `${JSON.stringify(arquivo, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
   fs.renameSync(temporario, destino);
-  catalogoGlobal = [];
   return arquivo;
 }
