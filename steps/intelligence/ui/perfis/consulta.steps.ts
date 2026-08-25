@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 
+import { ProfileDetailsPage } from '../../../../pom/intelligence/profile/details.page';
 import { ProfileHistoryPage } from '../../../../pom/intelligence/profile/history.page';
 import {
   abrirSessaoIntelligenceApi,
@@ -16,7 +17,7 @@ registrarCaso('INT-17-PGUID-UI', async (world) => {
 
   const page = await autenticarAdmin(world);
   await page.abrirDetalhesDoPerfilPorPguid(pguid);
-  await page.validarDetalhesDoPerfilCarregados(pguid);
+  await new ProfileDetailsPage(await world.pagina()).validarPerfilExistente(pguid);
 });
 
 registrarCaso('INT-100-I2', async (world) => {
@@ -25,7 +26,7 @@ registrarCaso('INT-100-I2', async (world) => {
   await page.autenticarComCredenciais(await world.credenciaisViewOnly());
   const pguid = obterValorObrigatorioDaMassa('PGUID', process.env.INT_100_PGUID);
   await page.abrirDetalhesDoPerfilPorPguid(pguid);
-  await page.validarDetalhesDoPerfilCarregados(pguid);
+  await new ProfileDetailsPage(await world.pagina()).validarPerfilExistente(pguid);
   await page.validarAusenciaDeControlesDeEscrita();
 });
 
@@ -107,6 +108,7 @@ registrarCaso('INT-24-UI-01', async (world) => {
 
   const page = await autenticarAdmin(world);
   await page.abrirDetalhesDoPerfilPorPguid(pguidAtual);
-  await page.validarDetalhesDoPerfilCarregados(pguidAtual);
-  await new ProfileHistoryPage(await world.pagina()).validarPreviousHistory(pguidsPreviousHistory);
+  const rawPage = await world.pagina();
+  await new ProfileDetailsPage(rawPage).validarPerfilExistente(pguidAtual);
+  await new ProfileHistoryPage(rawPage).validarPreviousHistory(pguidsPreviousHistory);
 });
