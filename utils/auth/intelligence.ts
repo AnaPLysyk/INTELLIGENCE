@@ -79,6 +79,10 @@ export async function obterCredenciaisParaPerfilIntelligence(
     const busca = classificado.claims.has('intelligence_list_regular');
     avaliados.push(`${item.origem}=viewOnly:${viewOnly},acesso:${acesso},busca:${busca}`);
     if (corresponde(perfil, classificado.claims)) {
+      console.log(
+        `INTELLIGENCE_PROFILE_IDENTITY|profile=${perfil}|source=${classificado.origem}`
+          + `|viewOnly=${viewOnly}|acesso=${acesso}|busca=${busca}`,
+      );
       return { usuario: classificado.usuario, senha: classificado.senha };
     }
   }
