@@ -24,6 +24,13 @@ import {
 type ProcessoIndexado = { ProcessId: number; Tguid: string; Pguid: string };
 type CampoEncontrado = { nome: string; valor: string };
 
+type FixtureBusca = {
+  seletor?: unknown;
+  valor?: unknown;
+  kind?: unknown;
+  esperado?: unknown;
+};
+
 const ALIASES: Record<string, string[]> = {
   cpf: ['cpf', 'cpfcidadao'],
   name: ['nome', 'fullname', 'name'],
@@ -81,6 +88,43 @@ function entrada(
   origem: EntradaMassaBusca['origem'],
 ): EntradaMassaBusca {
   return { seletor, valor, kind, origem, esperado };
+}
+
+function raizProjeto(): string {
+  const configurada = process.env.QA_PROJECT_ROOT?.trim();
+  return configurada ? path.resolve(configurada) : process.cwd();
+}
+
+function kindDaFixture(tipo: string, informado: unknown): EntradaMassaBusca['kind'] {
+  if (informado === 'KEY' || informado === 'BIOGRAPHIC' || informado === 'EXTERNAL_ID') return informado;
+  if (tipo === 'EXTERNAL.ID') return 'EXTERNAL_ID';
+  if (tipo === 'cpf' || tipo === 'cib') return 'KEY';
+  if (tipo === 'name' || tipo === 'birthdate') return 'BIOGRAPHIC';
+  return undefined;
+}
+
+function normalizarFixture(tipo: string, bruto: unknown): EntradaMassaBusca | undefined {
+  if (!bruto || typeof bruto !== 'object' || Array.isArray(bruto)) return undefined;
+  const item = bruto as FixtureBusca;
+  const seletor = typeof item.seletor === 'string' && item.seletor.trim() ? item.seletor.trim() : tipo;
+  const valor = typeof item.valor === 'string' || typeof item.valor === 'number' ? String(item.valor).trim() : '';
+  const kind = kindDaFixture(tipo, item.kind);
+  if (!valor || !kind) return undefined;
+
+  const esperadoBruto = item.esperado && typeof item.esperado === 'object' && !Array.isArray(item.esperado)
+    ? item.esperado as Record<string, unknown>
+    : {};
+  const esperado: IdentidadeEsperada = {
+    processId: Number(esperadoBruto.processId || 0),
+    pguid: String(esperadoBruto.pguid || '').trim(),
+    tguid: String(esperadoBruto.tguid || '').trim(),
+    nome: typeof esperadoBruto.nome === 'string' ? esperadoBruto.nome : undefined,
+    cpf: typeof esperadoBruto.cpf === 'string' ? esperadoBruto.cpf : undefined,
+    dataNascimento: typeof esperadoBruto.dataNascimento === 'string' ? esperadoBruto.dataNascimento : undefined,
+    externalId: typeof esperadoBruto.externalId === 'string' ? esperadoBruto.externalId : undefined,
+  };
+
+  return entrada(seletor, valor, esperado, kind, 'FIXTURE_VALIDADA');
 }
 
 async function estaPesquisavelNoIntelligence(
@@ -176,13 +220,28 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
     if (tiposAlvo.every((tipo) => buscas[tipo])) break;
   }
 
-  const caminhoFixture = path.resolve(__dirname, '../../test-data/fixtures/busca-massa-adicional.json');
+  let fixtureValidadaUsada = false;
+  const caminhoFixture = path.join(raizProjeto(), 'test-data', 'fixtures', 'busca-massa-adicional.json');
   if (fs.existsSync(caminhoFixture)) {
-    const fixture = JSON.parse(fs.readFileSync(caminhoFixture, 'utf8'));
-    for (const [tipo, item] of Object.entries(fixture.buscas || {})) {
-      if (!buscas[tipo]) {
-        console.log(`[massa] carregando fixture: ${tipo}`);
-        buscas[tipo] = item as EntradaMassaBusca;
+    const fixture = JSON.parse(fs.readFileSync(caminhoFixture, 'utf8')) as { buscas?: Record<string, unknown> };
+    for (const [tipo, bruto] of Object.entries(fixture.buscas || {})) {
+      if (buscas[tipo]) continue;
+      const candidata = normalizarFixture(tipo, bruto);
+      if (!candidata) {
+        console.log(`[massa] fixture ignorada por formato invalido: ${tipo}`);
+        continue;
+      }
+      try {
+        if (await estaPesquisavelNoIntelligence(request, candidata, sessionGuid)) {
+          console.log(`[massa] fixture validada e aceita: ${tipo}`);
+          buscas[tipo] = candidata;
+          fixtureValidadaUsada = true;
+        } else {
+          console.log(`[massa] fixture rejeitada por nao retornar resultado: ${tipo}`);
+        }
+      } catch (error_) {
+        const mensagem = error_ instanceof Error ? error_.message : String(error_);
+        console.log(`[massa] fixture rejeitada durante validacao: ${tipo}|motivo=${mensagem}`);
       }
     }
   } else {
@@ -198,7 +257,9 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
   const arquivo: ArquivoMassaBusca = {
     schemaVersion: 1,
     geradoEm: new Date().toISOString(),
-    fonte: 'SMART_API_BD_E_GBDS_SOMENTE_LEITURA',
+    fonte: fixtureValidadaUsada
+      ? 'SMART_API_BD_GBDS_E_FIXTURE_VALIDADA'
+      : 'SMART_API_BD_E_GBDS_SOMENTE_LEITURA',
     buscas,
     tiposAusentes,
   };
