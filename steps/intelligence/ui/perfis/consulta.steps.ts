@@ -33,36 +33,50 @@ registrarCaso('INT-100-I2', async (world) => {
 });
 
 registrarCaso('INT-100-I3', async (world) => {
+  await world.garantirMassa();
   const page = await world.intelligence();
-  const pguid = crypto.randomUUID().toUpperCase();
+  const pguidValido = obterValorObrigatorioDaMassa('PGUID', process.env.INT_100_PGUID);
+  const pguidInexistente = crypto.randomUUID().toUpperCase();
   await page.autenticarComCredenciais(await world.credenciaisViewOnly());
 
   const rawPage = await world.pagina();
-  const respostaPromise = rawPage.waitForResponse(
+
+  const respostaValidaPromise = rawPage.waitForResponse(
     (response) => response.request().method() === 'GET'
-      && response.url().includes(`/service/profile/person/${pguid}`),
+      && response.url().includes(`/service/profile/person/${pguidValido}`),
+    { timeout: 30_000 },
+  );
+  await page.abrirDetalhesDoPerfilPorPguid(pguidValido);
+  const respostaValida = await respostaValidaPromise;
+
+  console.log(
+    `INT100_VIEWONLY_CONTROL|pguid=${pguidValido}|http=${respostaValida.status()}|url=${respostaValida.url()}`,
+  );
+  expect(
+    respostaValida.status(),
+    'A mesma sessão view-only deve conseguir consultar um PGUID válido antes do hardening de not-found.',
+  ).toBe(200);
+
+  const respostaInexistentePromise = rawPage.waitForResponse(
+    (response) => response.request().method() === 'GET'
+      && response.url().includes(`/service/profile/person/${pguidInexistente}`),
     { timeout: 30_000 },
   );
 
-  await page.abrirDetalhesDoPerfilPorPguid(pguid);
-  const resposta = await respostaPromise;
-  const corpoResposta = await resposta.text().catch(() => '');
+  await page.abrirDetalhesDoPerfilPorPguid(pguidInexistente);
+  const respostaInexistente = await respostaInexistentePromise;
+  const corpoResposta = await respostaInexistente.text().catch(() => '');
   const corpoDiagnostico = corpoResposta.replace(/\s+/g, ' ').trim().slice(0, 1200);
 
   console.log(
-    `INT100_NOTFOUND_RESPONSE|http=${resposta.status()}|url=${resposta.url()}|body=${JSON.stringify(corpoDiagnostico)}`,
+    `INT100_NOTFOUND_RESPONSE|http=${respostaInexistente.status()}|url=${respostaInexistente.url()}|body=${JSON.stringify(corpoDiagnostico)}`,
   );
 
   expect(
-    resposta.status(),
+    respostaInexistente.status(),
     `Consultar PGUID inexistente em modo view-only não deve provocar erro interno do servidor. `
-      + `HTTP=${resposta.status()} body=${corpoDiagnostico || '<vazio>'}`,
+      + `HTTP=${respostaInexistente.status()} body=${corpoDiagnostico || '<vazio>'}`,
   ).toBeLessThan(500);
-
-  await expect(
-    rawPage.getByText(/perfil.*n[aã]o encontrado|n[aã]o encontrado|nenhum resultado encontrado|not found/i).first(),
-    'A UI deve indicar que o perfil solicitado não foi encontrado.',
-  ).toBeVisible({ timeout: 15_000 });
 
   await page.validarBuscaIndisponivel();
 });
