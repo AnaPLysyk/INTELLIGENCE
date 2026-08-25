@@ -11,15 +11,12 @@ import { obterValorObrigatorioDaMassa } from '../../../../utils/data/intelligenc
 import { autenticarAdmin } from '../helpers';
 
 registrarCaso('INT-17-PGUID-UI', async (world) => {
-  const massa = await world.garantirMassa();
-  const transacao = massa.buscas.TGUID;
-  if (!transacao?.valor || !transacao.esperado.pguid) {
-    throw new Error('BLOQUEADO: a massa de TGUID não informa o PGUID vinculado.');
-  }
+  await world.garantirMassa();
+  const pguid = obterValorObrigatorioDaMassa('PGUID', process.env.INT_17_PGUID);
 
   const page = await autenticarAdmin(world);
-  await page.abrirPerfilVinculadoNaTransacao(transacao.valor, transacao.esperado.pguid);
-  await page.validarNavegacaoDoPerfilReconhecida();
+  await page.abrirDetalhesDoPerfilPorPguid(pguid);
+  await page.validarDetalhesDoPerfilCarregados(pguid);
 });
 
 registrarCaso('INT-100-I2', async (world) => {
