@@ -1,0 +1,6 @@
+PREFLIGHT|project=intelligence|vpn=CONNECTED|tcp=0
+ROUTE|project=intelligence|root=C:\Users\Testing Company\projetos-github\INTELLIGENCE|capability=regression|runner=host
+
+> intelligence-automacao@1.0.0 test:regression
+> node orchestrator.cjs regression
+
