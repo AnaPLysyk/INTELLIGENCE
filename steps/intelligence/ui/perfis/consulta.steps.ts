@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 
+import { ProfileHistoryPage } from '../../../../pom/intelligence/profile/history.page';
 import { registrarCaso } from '../../../../utils/common/case-registry';
 import { obterValorObrigatorioDaMassa } from '../../../../utils/data/intelligence';
 import { autenticarAdmin } from '../helpers';
@@ -52,5 +53,6 @@ registrarCaso('INT-24-UI-01', async (world) => {
   const pguidAtual = obterValorObrigatorioDaMassa('PGUID', process.env.INT_24_PGUID);
   await page.abrirDetalhesDoPerfilPorPguid(pguidAtual);
   await page.validarDetalhesDoPerfilCarregados(pguidAtual);
-  await page.navegarParaPerfilAnteriorNoHistorico(pguidAtual);
+  const historico = new ProfileHistoryPage(await world.pagina());
+  await historico.navegarParaPerfilAnteriorNoHistorico(pguidAtual);
 });
