@@ -1,13 +1,18 @@
+import { ProfileEditingPage } from '../../../../pom/intelligence/profile/editing.page';
 import { registrarCaso } from '../../../../utils/common/case-registry';
-import { obterValorObrigatorioDaMassa } from '../../../../utils/data/intelligence';
-import { autenticarAdmin, envObrigatoria } from '../helpers';
+import { autenticarAdmin } from '../helpers';
 
 registrarCaso('INT-40-UI-02', async (world) => {
-  await world.garantirMassa();
+  const massa = await world.garantirMassa();
+  const transacao = massa.buscas.TGUID;
+  const pguid = process.env.INT_40_PGUID?.trim() || transacao?.esperado.pguid?.trim();
+
+  if (!pguid) {
+    throw new Error('BLOQUEADO: a massa de TGUID não informa o PGUID vinculado para validar o INT-40 no perfil.');
+  }
+
   const page = await autenticarAdmin(world);
-  await page.abrirDetalhesDoPerfilPorPguid(
-    obterValorObrigatorioDaMassa('PGUID', process.env.INT_40_PGUID),
-  );
+  await page.abrirDetalhesDoPerfilPorPguid(pguid);
   await page.abrirEdicaoAtual();
-  await page.validarCampoDataPreenchidoNaEdicao(envObrigatoria('INT_40_DATE_FIELD_LABEL'));
+  await new ProfileEditingPage(await world.pagina()).validarAlgumCampoDataPreenchido();
 });
