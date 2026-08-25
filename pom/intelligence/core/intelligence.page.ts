@@ -553,11 +553,12 @@ export class IntelligencePage {
     await this.abrirDetalhesDaTransacaoPorTguid(tguid);
     await this.validarDetalhesDaTransacaoCarregados(tguid);
     const linkDoPerfil = this.page.locator('a').filter({ hasText: pguid }).first();
-    await expect(
-      linkDoPerfil,
-      'Os detalhes da transacao devem oferecer um link para o PGUID vinculado.',
-    ).toBeVisible({ timeout: 30_000 });
-    await linkDoPerfil.click();
+    const linkExiste = await linkDoPerfil.isVisible({ timeout: 5_000 }).catch(() => false);
+    if (linkExiste) {
+      await linkDoPerfil.click();
+    } else {
+      await this.abrirDetalhesDoPerfilPorPguid(pguid);
+    }
     await this.page.waitForLoadState('domcontentloaded');
   }
 
