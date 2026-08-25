@@ -10,7 +10,7 @@ export type CredenciaisIntelligenceApi = {
 export type PayloadBuscaIntelligence = {
   name: string;
   value: string;
-  kind: 'KEY' | 'BIOGRAPHIC' | 'EXTERNAL_ID';
+  kind: string;
 };
 
 export type RespostaApiIntelligence = {
