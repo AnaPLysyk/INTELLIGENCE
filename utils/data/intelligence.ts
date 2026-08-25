@@ -14,7 +14,7 @@ export type IdentidadeEsperada = {
 export type EntradaMassaBusca = {
   seletor: string;
   valor: string;
-  kind?: 'KEY' | 'BIOGRAPHIC' | 'EXTERNAL_ID';
+  kind?: string;
   origem: 'SMART.Process' | 'SMART API' | 'GBDS API' | 'FIXTURE_VALIDADA';
   esperado: IdentidadeEsperada;
 };
