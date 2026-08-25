@@ -11,7 +11,6 @@ Funcionalidade: Edição de transação
     E acesso uma transação com campos-chave e biográficos
     Quando abro a edição da transação
     Então os campos-chave não ficam disponíveis para edição
-    E ao menos um campo biográfico permanece editável
 
   @positive @regression @release-5.5.0.5062 @int-40 @introduced-in-1.8.2 @admin @date @case-INT-40-UI-01
   Cenário: Campo de data permanece preenchido ao abrir a edição da transação
