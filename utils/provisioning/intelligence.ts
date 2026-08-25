@@ -27,13 +27,7 @@ import {
 
 type ProcessoIndexado = { ProcessId: number; Tguid: string; Pguid: string };
 type CampoEncontrado = { nome: string; valor: string };
-
-type FixtureBusca = {
-  seletor?: unknown;
-  valor?: unknown;
-  kind?: unknown;
-  esperado?: unknown;
-};
+type Candidata = { tipo: string; item: EntradaMassaBusca };
 
 const ALIASES: Record<string, string[]> = {
   cpf: ['cpf', 'cpfcidadao'],
@@ -125,41 +119,6 @@ function variacoesValor(tipo: string, valor: string): string[] {
   return [...valores].filter(Boolean);
 }
 
-function raizProjeto(): string {
-  const configurada = process.env.QA_PROJECT_ROOT?.trim();
-  return configurada ? path.resolve(configurada) : process.cwd();
-}
-
-function esperadoDaFixture(item: FixtureBusca): IdentidadeEsperada {
-  const esperadoBruto = item.esperado && typeof item.esperado === 'object' && !Array.isArray(item.esperado)
-    ? item.esperado as Record<string, unknown>
-    : {};
-  return {
-    processId: Number(esperadoBruto.processId || 0),
-    pguid: String(esperadoBruto.pguid || '').trim(),
-    tguid: String(esperadoBruto.tguid || '').trim(),
-    nome: typeof esperadoBruto.nome === 'string' ? esperadoBruto.nome : undefined,
-    cpf: typeof esperadoBruto.cpf === 'string' ? esperadoBruto.cpf : undefined,
-    dataNascimento: typeof esperadoBruto.dataNascimento === 'string' ? esperadoBruto.dataNascimento : undefined,
-    externalId: typeof esperadoBruto.externalId === 'string' ? esperadoBruto.externalId : undefined,
-  };
-}
-
-function normalizarFixture(
-  catalogo: CampoBuscaIntelligence[],
-  tipo: string,
-  bruto: unknown,
-): EntradaMassaBusca | undefined {
-  if (!bruto || typeof bruto !== 'object' || Array.isArray(bruto)) return undefined;
-  const item = bruto as FixtureBusca;
-  const valor = typeof item.valor === 'string' || typeof item.valor === 'number' ? String(item.valor).trim() : '';
-  if (!valor) return undefined;
-
-  const campo = resolverCampoCatalogo(catalogo, tipo);
-  if (!campo) return undefined;
-  return entrada(campo.name, valor, esperadoDaFixture(item), campo.kind, 'FIXTURE_VALIDADA');
-}
-
 async function carregarCatalogoBusca(
   request: APIRequestContext,
   sessionGuid: string,
@@ -181,40 +140,76 @@ async function carregarCatalogoBusca(
   return catalogo;
 }
 
-async function estaPesquisavelNoIntelligence(
+async function validarCandidata(
   request: APIRequestContext,
-  item: EntradaMassaBusca,
+  candidata: Candidata,
   sessionGuid: string,
-): Promise<boolean> {
-  const resultado = await buscarPerfisIntelligence(request, payloadDaMassa(item), sessionGuid, { first: 0, size: 5 });
+): Promise<{ disponivel: boolean; itens: unknown[] }> {
+  const resultado = await buscarPerfisIntelligence(
+    request,
+    payloadDaMassa(candidata.item),
+    sessionGuid,
+    { first: 0, size: 5 },
+  );
   const statusCount = resultado.count.response.status();
   const statusList = resultado.list.response.status();
+
   if (statusCount === 401 || statusList === 401) {
     throw new Error('BLOQUEADO: a sessao administrativa do Intelligence foi rejeitada durante a descoberta da massa.');
   }
+
   if (!resultado.count.response.ok() || !resultado.list.response.ok()) {
-    throw new Error(`BLOQUEADO: o pre-flight da massa retornou HTTP count=${statusCount}, list=${statusList}.`);
+    console.log(
+      `[massa] preflight rejeitado: tipo=${candidata.tipo}|origem=${candidata.item.origem}`
+      + `|name=${candidata.item.seletor}|kind=${candidata.item.kind}|countHttp=${statusCount}|listHttp=${statusList}`,
+    );
+    return { disponivel: false, itens: [] };
   }
 
   const itens = extrairItens(resultado.list.body);
   const quantidade = extrairContagem(resultado.count.body);
-  if (quantidade <= 0 || itens.length === 0) return false;
-
-  const identidadesEsperadas = [item.esperado.pguid, item.esperado.tguid]
+  const identidadesEsperadas = [candidata.item.esperado.pguid, candidata.item.esperado.tguid]
     .map((valor) => String(valor || '').trim())
     .filter(Boolean);
-  return identidadesEsperadas.some((valor) => contemValor(itens, valor)) || contemValor(itens, item.valor);
+  const corresponde = identidadesEsperadas.some((valor) => contemValor(itens, valor))
+    || contemValor(itens, candidata.item.valor);
+  const disponivel = quantidade > 0 && itens.length > 0 && corresponde;
+
+  console.log(
+    `[massa] preflight: tipo=${candidata.tipo}|origem=${candidata.item.origem}`
+    + `|name=${candidata.item.seletor}|kind=${candidata.item.kind}`
+    + `|countHttp=${statusCount}|listHttp=${statusList}|count=${quantidade}|items=${itens.length}|match=${corresponde}`,
+  );
+
+  return { disponivel, itens };
 }
 
-async function adicionarCandidatasDoPerfilIntelligence(
+function candidatasDeCampos(
+  catalogo: CampoBuscaIntelligence[],
+  campos: CampoEncontrado[],
+  esperado: IdentidadeEsperada,
+  origem: EntradaMassaBusca['origem'],
+): Candidata[] {
+  const candidatas: Candidata[] = [];
+  for (const tipo of ['cpf', 'name', 'birthdate', 'EXTERNAL.ID', 'cib']) {
+    const valor = encontrar(campos, tipo);
+    if (!valor) continue;
+    for (const variacao of variacoesValor(tipo, valor)) {
+      const item = entradaDoCatalogo(catalogo, tipo, variacao, esperado, origem);
+      if (item) candidatas.push({ tipo, item });
+    }
+  }
+  return candidatas;
+}
+
+async function candidatasDoPerfilIntelligence(
   request: APIRequestContext,
   sessionGuid: string,
   catalogo: CampoBuscaIntelligence[],
   processo: ProcessoIndexado,
-  candidatas: Array<{ tipo: string; item: EntradaMassaBusca }>,
-): Promise<void> {
+): Promise<Candidata[]> {
   const resposta = await obterDetalhesPerfilIntelligence(request, String(processo.Pguid), sessionGuid);
-  if (resposta.response.status() !== 200) return;
+  if (resposta.response.status() !== 200) return [];
 
   const campos: CampoEncontrado[] = [];
   coletarCampos(resposta.body, campos);
@@ -227,16 +222,43 @@ async function adicionarCandidatasDoPerfilIntelligence(
     dataNascimento: encontrar(campos, 'birthdate'),
     externalId: encontrar(campos, 'EXTERNAL.ID'),
   };
+  return candidatasDeCampos(catalogo, campos, esperado, 'INTELLIGENCE API');
+}
 
-  for (const tipo of ['cpf', 'name', 'birthdate', 'cib']) {
-    const valor = encontrar(campos, tipo);
-    if (!valor) continue;
-    for (const variacao of variacoesValor(tipo, valor)) {
-      const item = entradaDoCatalogo(catalogo, tipo, variacao, esperado, 'INTELLIGENCE API');
-      if (item) candidatas.push({ tipo, item });
+function candidatasDosResultadosCpf(
+  catalogo: CampoBuscaIntelligence[],
+  itens: unknown[],
+  esperado: IdentidadeEsperada,
+): Candidata[] {
+  const campos: CampoEncontrado[] = [];
+  coletarCampos(itens, campos);
+  return candidatasDeCampos(catalogo, campos, esperado, 'INTELLIGENCE API');
+}
+
+async function aplicarCandidatas(
+  request: APIRequestContext,
+  candidatas: Candidata[],
+  sessionGuid: string,
+  buscas: Record<string, EntradaMassaBusca>,
+): Promise<void> {
+  for (const candidata of candidatas) {
+    if (buscas[candidata.tipo]) continue;
+    const resultado = await validarCandidata(request, candidata, sessionGuid);
+    if (!resultado.disponivel) continue;
+    buscas[candidata.tipo] = candidata.item;
+    console.log(
+      `[massa] candidata validada: tipo=${candidata.tipo}|origem=${candidata.item.origem}`
+      + `|name=${candidata.item.seletor}|kind=${candidata.item.kind}`,
+    );
+
+    if (candidata.tipo === 'cpf') {
+      const derivadas = candidatasDosResultadosCpf(catalogoGlobal, resultado.itens, candidata.item.esperado);
+      await aplicarCandidatas(request, derivadas, sessionGuid, buscas);
     }
   }
 }
+
+let catalogoGlobal: CampoBuscaIntelligence[] = [];
 
 export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContext): Promise<ArquivoMassaBusca> {
   const limite = Number(process.env.SMART_MASSA_LIMITE_CANDIDATOS?.trim() || '30');
@@ -255,6 +277,7 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
   const tokenGbds = await autenticarGbds();
   const sessionGuid = await autenticarIntelligenceApi(request);
   const catalogo = await carregarCatalogoBusca(request, sessionGuid);
+  catalogoGlobal = catalogo;
   const buscas: Record<string, EntradaMassaBusca> = {};
   const tiposAlvo = (process.env.INTELLIGENCE_MASSA_TIPOS || 'PGUID,TGUID,EXTERNAL.ID,cpf,birthdate,name,cib')
     .split(',').map((tipo) => tipo.trim()).filter(Boolean);
@@ -277,7 +300,6 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
       return { processo, campos };
     }));
 
-    const candidatas: Array<{ tipo: string; item: EntradaMassaBusca }> = [];
     for (const { processo, campos } of resultados) {
       const esperado: IdentidadeEsperada = {
         processId: Number(processo.ProcessId),
@@ -291,82 +313,34 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
       buscas.PGUID ??= entrada('PGUID', esperado.pguid, esperado, undefined, 'SMART.Process');
       buscas.TGUID ??= entrada('TGUID', esperado.tguid, esperado, undefined, 'SMART.Process');
 
-      const valores: Array<{ tipo: string; valor?: string; origem: EntradaMassaBusca['origem'] }> = [
-        { tipo: 'cpf', valor: esperado.cpf, origem: 'SMART API' },
-        { tipo: 'name', valor: esperado.nome, origem: 'SMART API' },
-        { tipo: 'birthdate', valor: esperado.dataNascimento, origem: 'SMART API' },
-        { tipo: 'EXTERNAL.ID', valor: esperado.externalId, origem: 'GBDS API' },
-        { tipo: 'cib', valor: encontrar(campos, 'cib'), origem: 'GBDS API' },
-      ];
-      for (const valor of valores) {
-        if (buscas[valor.tipo] || !valor.valor) continue;
-        for (const variacao of variacoesValor(valor.tipo, valor.valor)) {
-          const candidata = entradaDoCatalogo(catalogo, valor.tipo, variacao, esperado, valor.origem);
-          if (candidata) candidatas.push({ tipo: valor.tipo, item: candidata });
-        }
-      }
-
-      await adicionarCandidatasDoPerfilIntelligence(request, sessionGuid, catalogo, processo, candidatas);
+      await aplicarCandidatas(
+        request,
+        candidatasDeCampos(catalogo, campos, esperado, 'SMART API'),
+        sessionGuid,
+        buscas,
+      );
+      await aplicarCandidatas(
+        request,
+        await candidatasDoPerfilIntelligence(request, sessionGuid, catalogo, processo),
+        sessionGuid,
+        buscas,
+      );
     }
 
-    const validacoes = await Promise.all(candidatas.map(async ({ tipo, item }) => ({
-      tipo,
-      item,
-      disponivel: await estaPesquisavelNoIntelligence(request, item, sessionGuid),
-    })));
-    for (const validacao of validacoes) {
-      if (!validacao.disponivel || buscas[validacao.tipo]) continue;
-      buscas[validacao.tipo] = validacao.item;
-      console.log(`[massa] candidata validada: tipo=${validacao.tipo}|origem=${validacao.item.origem}|valor=${validacao.item.valor}`);
-    }
-    if (tiposAlvo.every((tipo) => buscas[tipo])) break;
-  }
-
-  let fixtureValidadaUsada = false;
-  const caminhoFixture = path.join(raizProjeto(), 'test-data', 'fixtures', 'busca-massa-adicional.json');
-  if (fs.existsSync(caminhoFixture)) {
-    const fixture = JSON.parse(fs.readFileSync(caminhoFixture, 'utf8')) as { buscas?: Record<string, unknown> };
-    for (const [tipo, bruto] of Object.entries(fixture.buscas || {})) {
-      if (buscas[tipo]) continue;
-      const candidata = normalizarFixture(catalogo, tipo, bruto);
-      if (!candidata) {
-        console.log(`[massa] fixture ignorada: ${tipo}|motivo=campo-ausente-no-catalogo-ou-formato-invalido`);
-        continue;
-      }
-      try {
-        let aceita = false;
-        for (const variacao of variacoesValor(tipo, candidata.valor)) {
-          const candidataVariacao = { ...candidata, valor: variacao };
-          if (await estaPesquisavelNoIntelligence(request, candidataVariacao, sessionGuid)) {
-            console.log(`[massa] fixture validada e aceita: ${tipo}|valor=${variacao}`);
-            buscas[tipo] = candidataVariacao;
-            fixtureValidadaUsada = true;
-            aceita = true;
-            break;
-          }
-        }
-        if (!aceita) console.log(`[massa] fixture rejeitada por nao retornar resultado: ${tipo}`);
-      } catch (error_) {
-        const mensagem = error_ instanceof Error ? error_.message : String(error_);
-        console.log(`[massa] fixture rejeitada durante validacao: ${tipo}|motivo=${mensagem}`);
-      }
-    }
-  } else {
-    console.log(`[massa] fixture nao encontrada em: ${caminhoFixture}`);
+    if (tiposAlvo.filter((tipo) => resolverCampoCatalogo(catalogo, tipo) || ['PGUID', 'TGUID'].includes(tipo))
+      .every((tipo) => buscas[tipo])) break;
   }
 
   const tiposAusentes = tiposAlvo.filter((tipo) => !buscas[tipo]);
   const obrigatoriosAusentes = tiposObrigatorios.filter((tipo) => !buscas[tipo]);
   if (obrigatoriosAusentes.length > 0) {
-    throw new Error(`BLOQUEADO: o SMART nao forneceu a massa central para: ${obrigatoriosAusentes.join(', ')}`);
+    throw new Error(`BLOQUEADO: o ambiente nao forneceu a massa central para: ${obrigatoriosAusentes.join(', ')}`);
   }
 
   const arquivo: ArquivoMassaBusca = {
     schemaVersion: 1,
     geradoEm: new Date().toISOString(),
-    fonte: fixtureValidadaUsada
-      ? 'SMART_API_BD_GBDS_E_FIXTURE_VALIDADA'
-      : 'SMART_API_BD_E_GBDS_SOMENTE_LEITURA',
+    fonte: 'SMART_API_BD_GBDS_INTELLIGENCE_SOMENTE_LEITURA',
     buscas,
     tiposAusentes,
   };
@@ -375,5 +349,6 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
   fs.mkdirSync(path.dirname(destino), { recursive: true });
   fs.writeFileSync(temporario, `${JSON.stringify(arquivo, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
   fs.renameSync(temporario, destino);
+  catalogoGlobal = [];
   return arquivo;
 }
