@@ -15,7 +15,7 @@ export type EntradaMassaBusca = {
   seletor: string;
   valor: string;
   kind?: string;
-  origem: 'SMART.Process' | 'SMART API' | 'GBDS API' | 'FIXTURE_VALIDADA';
+  origem: 'SMART.Process' | 'SMART API' | 'GBDS API' | 'INTELLIGENCE API' | 'FIXTURE_VALIDADA';
   esperado: IdentidadeEsperada;
 };
 
