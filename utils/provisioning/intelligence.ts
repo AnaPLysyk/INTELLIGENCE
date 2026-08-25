@@ -14,6 +14,7 @@ import {
   extrairContagem,
   extrairItens,
   listarCamposBuscaIntelligence,
+  obterDetalhesPerfilIntelligence,
   payloadDaMassa,
   type CampoBuscaIntelligence,
 } from '../api/intelligence';
@@ -113,6 +114,17 @@ function entradaDoCatalogo(
   return entrada(campo.name, valor, esperado, campo.kind, origem);
 }
 
+function variacoesValor(tipo: string, valor: string): string[] {
+  const valores = new Set([valor.trim()]);
+  if (tipo === 'birthdate') {
+    const br = valor.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (br) valores.add(`${br[3]}-${br[2]}-${br[1]}`);
+    const iso = valor.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);
+    if (iso) valores.add(`${iso[3]}/${iso[2]}/${iso[1]}`);
+  }
+  return [...valores].filter(Boolean);
+}
+
 function raizProjeto(): string {
   const configurada = process.env.QA_PROJECT_ROOT?.trim();
   return configurada ? path.resolve(configurada) : process.cwd();
@@ -194,6 +206,38 @@ async function estaPesquisavelNoIntelligence(
   return identidadesEsperadas.some((valor) => contemValor(itens, valor)) || contemValor(itens, item.valor);
 }
 
+async function adicionarCandidatasDoPerfilIntelligence(
+  request: APIRequestContext,
+  sessionGuid: string,
+  catalogo: CampoBuscaIntelligence[],
+  processo: ProcessoIndexado,
+  candidatas: Array<{ tipo: string; item: EntradaMassaBusca }>,
+): Promise<void> {
+  const resposta = await obterDetalhesPerfilIntelligence(request, String(processo.Pguid), sessionGuid);
+  if (resposta.response.status() !== 200) return;
+
+  const campos: CampoEncontrado[] = [];
+  coletarCampos(resposta.body, campos);
+  const esperado: IdentidadeEsperada = {
+    processId: Number(processo.ProcessId),
+    pguid: String(processo.Pguid),
+    tguid: String(processo.Tguid),
+    nome: encontrar(campos, 'name'),
+    cpf: encontrar(campos, 'cpf'),
+    dataNascimento: encontrar(campos, 'birthdate'),
+    externalId: encontrar(campos, 'EXTERNAL.ID'),
+  };
+
+  for (const tipo of ['cpf', 'name', 'birthdate', 'cib']) {
+    const valor = encontrar(campos, tipo);
+    if (!valor) continue;
+    for (const variacao of variacoesValor(tipo, valor)) {
+      const item = entradaDoCatalogo(catalogo, tipo, variacao, esperado, 'INTELLIGENCE API');
+      if (item) candidatas.push({ tipo, item });
+    }
+  }
+}
+
 export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContext): Promise<ArquivoMassaBusca> {
   const limite = Number(process.env.SMART_MASSA_LIMITE_CANDIDATOS?.trim() || '30');
   if (!Number.isInteger(limite) || limite <= 0 || limite > 200) {
@@ -256,9 +300,13 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
       ];
       for (const valor of valores) {
         if (buscas[valor.tipo] || !valor.valor) continue;
-        const candidata = entradaDoCatalogo(catalogo, valor.tipo, valor.valor, esperado, valor.origem);
-        if (candidata) candidatas.push({ tipo: valor.tipo, item: candidata });
+        for (const variacao of variacoesValor(valor.tipo, valor.valor)) {
+          const candidata = entradaDoCatalogo(catalogo, valor.tipo, variacao, esperado, valor.origem);
+          if (candidata) candidatas.push({ tipo: valor.tipo, item: candidata });
+        }
       }
+
+      await adicionarCandidatasDoPerfilIntelligence(request, sessionGuid, catalogo, processo, candidatas);
     }
 
     const validacoes = await Promise.all(candidatas.map(async ({ tipo, item }) => ({
@@ -266,7 +314,11 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
       item,
       disponivel: await estaPesquisavelNoIntelligence(request, item, sessionGuid),
     })));
-    for (const validacao of validacoes) if (validacao.disponivel) buscas[validacao.tipo] ??= validacao.item;
+    for (const validacao of validacoes) {
+      if (!validacao.disponivel || buscas[validacao.tipo]) continue;
+      buscas[validacao.tipo] = validacao.item;
+      console.log(`[massa] candidata validada: tipo=${validacao.tipo}|origem=${validacao.item.origem}|valor=${validacao.item.valor}`);
+    }
     if (tiposAlvo.every((tipo) => buscas[tipo])) break;
   }
 
@@ -282,13 +334,18 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
         continue;
       }
       try {
-        if (await estaPesquisavelNoIntelligence(request, candidata, sessionGuid)) {
-          console.log(`[massa] fixture validada e aceita: ${tipo}`);
-          buscas[tipo] = candidata;
-          fixtureValidadaUsada = true;
-        } else {
-          console.log(`[massa] fixture rejeitada por nao retornar resultado: ${tipo}`);
+        let aceita = false;
+        for (const variacao of variacoesValor(tipo, candidata.valor)) {
+          const candidataVariacao = { ...candidata, valor: variacao };
+          if (await estaPesquisavelNoIntelligence(request, candidataVariacao, sessionGuid)) {
+            console.log(`[massa] fixture validada e aceita: ${tipo}|valor=${variacao}`);
+            buscas[tipo] = candidataVariacao;
+            fixtureValidadaUsada = true;
+            aceita = true;
+            break;
+          }
         }
+        if (!aceita) console.log(`[massa] fixture rejeitada por nao retornar resultado: ${tipo}`);
       } catch (error_) {
         const mensagem = error_ instanceof Error ? error_.message : String(error_);
         console.log(`[massa] fixture rejeitada durante validacao: ${tipo}|motivo=${mensagem}`);
