@@ -10,9 +10,12 @@ import {
   autenticarIntelligenceApi,
   buscarPerfisIntelligence,
   contemValor,
+  extrairCamposBusca,
   extrairContagem,
   extrairItens,
+  listarCamposBuscaIntelligence,
   payloadDaMassa,
+  type CampoBuscaIntelligence,
 } from '../api/intelligence';
 import {
   caminhoArquivoMassa,
@@ -34,8 +37,8 @@ type FixtureBusca = {
 const ALIASES: Record<string, string[]> = {
   cpf: ['cpf', 'cpfcidadao'],
   name: ['nome', 'fullname', 'name'],
-  birthdate: ['birthdate', 'birth_date', 'datanascimento', 'datadenascimento'],
-  'EXTERNAL.ID': ['external.id', 'externalid', 'external_id', 'externalidentifier'],
+  birthdate: ['birthdate', 'birth_date', 'datanascimento', 'datadenascimento', 'data de nascimento'],
+  'EXTERNAL.ID': ['external.id', 'externalid', 'external_id', 'externalidentifier', 'external id'],
   cib: ['cib', 'cib_exid', 'cibexid'],
 };
 
@@ -80,6 +83,14 @@ function encontrar(campos: CampoEncontrado[], tipo: string): string | undefined 
   return undefined;
 }
 
+function resolverCampoCatalogo(
+  catalogo: CampoBuscaIntelligence[],
+  tipo: string,
+): CampoBuscaIntelligence | undefined {
+  const aliases = new Set((ALIASES[tipo] ?? [tipo]).map(normalizar));
+  return catalogo.find((campo) => aliases.has(normalizar(campo.name)));
+}
+
 function entrada(
   seletor: string,
   valor: string,
@@ -90,31 +101,28 @@ function entrada(
   return { seletor, valor, kind, origem, esperado };
 }
 
+function entradaDoCatalogo(
+  catalogo: CampoBuscaIntelligence[],
+  tipo: string,
+  valor: string,
+  esperado: IdentidadeEsperada,
+  origem: EntradaMassaBusca['origem'],
+): EntradaMassaBusca | undefined {
+  const campo = resolverCampoCatalogo(catalogo, tipo);
+  if (!campo) return undefined;
+  return entrada(campo.name, valor, esperado, campo.kind, origem);
+}
+
 function raizProjeto(): string {
   const configurada = process.env.QA_PROJECT_ROOT?.trim();
   return configurada ? path.resolve(configurada) : process.cwd();
 }
 
-function kindDaFixture(tipo: string, informado: unknown): EntradaMassaBusca['kind'] {
-  if (informado === 'KEY' || informado === 'BIOGRAPHIC' || informado === 'EXTERNAL_ID') return informado;
-  if (tipo === 'EXTERNAL.ID') return 'EXTERNAL_ID';
-  if (tipo === 'cpf' || tipo === 'cib') return 'KEY';
-  if (tipo === 'name' || tipo === 'birthdate') return 'BIOGRAPHIC';
-  return undefined;
-}
-
-function normalizarFixture(tipo: string, bruto: unknown): EntradaMassaBusca | undefined {
-  if (!bruto || typeof bruto !== 'object' || Array.isArray(bruto)) return undefined;
-  const item = bruto as FixtureBusca;
-  const seletor = typeof item.seletor === 'string' && item.seletor.trim() ? item.seletor.trim() : tipo;
-  const valor = typeof item.valor === 'string' || typeof item.valor === 'number' ? String(item.valor).trim() : '';
-  const kind = kindDaFixture(tipo, item.kind);
-  if (!valor || !kind) return undefined;
-
+function esperadoDaFixture(item: FixtureBusca): IdentidadeEsperada {
   const esperadoBruto = item.esperado && typeof item.esperado === 'object' && !Array.isArray(item.esperado)
     ? item.esperado as Record<string, unknown>
     : {};
-  const esperado: IdentidadeEsperada = {
+  return {
     processId: Number(esperadoBruto.processId || 0),
     pguid: String(esperadoBruto.pguid || '').trim(),
     tguid: String(esperadoBruto.tguid || '').trim(),
@@ -123,8 +131,42 @@ function normalizarFixture(tipo: string, bruto: unknown): EntradaMassaBusca | un
     dataNascimento: typeof esperadoBruto.dataNascimento === 'string' ? esperadoBruto.dataNascimento : undefined,
     externalId: typeof esperadoBruto.externalId === 'string' ? esperadoBruto.externalId : undefined,
   };
+}
 
-  return entrada(seletor, valor, esperado, kind, 'FIXTURE_VALIDADA');
+function normalizarFixture(
+  catalogo: CampoBuscaIntelligence[],
+  tipo: string,
+  bruto: unknown,
+): EntradaMassaBusca | undefined {
+  if (!bruto || typeof bruto !== 'object' || Array.isArray(bruto)) return undefined;
+  const item = bruto as FixtureBusca;
+  const valor = typeof item.valor === 'string' || typeof item.valor === 'number' ? String(item.valor).trim() : '';
+  if (!valor) return undefined;
+
+  const campo = resolverCampoCatalogo(catalogo, tipo);
+  if (!campo) return undefined;
+  return entrada(campo.name, valor, esperadoDaFixture(item), campo.kind, 'FIXTURE_VALIDADA');
+}
+
+async function carregarCatalogoBusca(
+  request: APIRequestContext,
+  sessionGuid: string,
+): Promise<CampoBuscaIntelligence[]> {
+  const resposta = await listarCamposBuscaIntelligence(request, sessionGuid);
+  if (resposta.response.status() !== 200) {
+    throw new Error(`BLOQUEADO: fields/list retornou HTTP ${resposta.response.status()} durante descoberta da massa.`);
+  }
+  const catalogo = extrairCamposBusca(resposta.body);
+  console.log(`[massa] catalogo carregado: campos=${catalogo.length}`);
+  for (const tipo of ['cpf', 'name', 'birthdate', 'EXTERNAL.ID', 'cib']) {
+    const campo = resolverCampoCatalogo(catalogo, tipo);
+    console.log(
+      campo
+        ? `[massa] catalogo resolve: tipo=${tipo}|name=${campo.name}|kind=${campo.kind}|type=${campo.type}`
+        : `[massa] catalogo sem campo: tipo=${tipo}`,
+    );
+  }
+  return catalogo;
 }
 
 async function estaPesquisavelNoIntelligence(
@@ -168,6 +210,7 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
   const token = await autenticarSmart(request);
   const tokenGbds = await autenticarGbds();
   const sessionGuid = await autenticarIntelligenceApi(request);
+  const catalogo = await carregarCatalogoBusca(request, sessionGuid);
   const buscas: Record<string, EntradaMassaBusca> = {};
   const tiposAlvo = (process.env.INTELLIGENCE_MASSA_TIPOS || 'PGUID,TGUID,EXTERNAL.ID,cpf,birthdate,name,cib')
     .split(',').map((tipo) => tipo.trim()).filter(Boolean);
@@ -203,12 +246,19 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
       };
       buscas.PGUID ??= entrada('PGUID', esperado.pguid, esperado, undefined, 'SMART.Process');
       buscas.TGUID ??= entrada('TGUID', esperado.tguid, esperado, undefined, 'SMART.Process');
-      if (!buscas.cpf && esperado.cpf) candidatas.push({ tipo: 'cpf', item: entrada('cpf', esperado.cpf, esperado, 'KEY', 'SMART API') });
-      if (!buscas.name && esperado.nome) candidatas.push({ tipo: 'name', item: entrada('name', esperado.nome, esperado, 'BIOGRAPHIC', 'SMART API') });
-      if (!buscas.birthdate && esperado.dataNascimento) candidatas.push({ tipo: 'birthdate', item: entrada('birthdate', esperado.dataNascimento, esperado, 'BIOGRAPHIC', 'SMART API') });
-      if (!buscas['EXTERNAL.ID'] && esperado.externalId) candidatas.push({ tipo: 'EXTERNAL.ID', item: entrada('EXTERNAL.ID', esperado.externalId, esperado, 'EXTERNAL_ID', 'GBDS API') });
-      const cib = encontrar(campos, 'cib');
-      if (!buscas.cib && cib) candidatas.push({ tipo: 'cib', item: entrada('cib', cib, esperado, 'KEY', 'GBDS API') });
+
+      const valores: Array<{ tipo: string; valor?: string; origem: EntradaMassaBusca['origem'] }> = [
+        { tipo: 'cpf', valor: esperado.cpf, origem: 'SMART API' },
+        { tipo: 'name', valor: esperado.nome, origem: 'SMART API' },
+        { tipo: 'birthdate', valor: esperado.dataNascimento, origem: 'SMART API' },
+        { tipo: 'EXTERNAL.ID', valor: esperado.externalId, origem: 'GBDS API' },
+        { tipo: 'cib', valor: encontrar(campos, 'cib'), origem: 'GBDS API' },
+      ];
+      for (const valor of valores) {
+        if (buscas[valor.tipo] || !valor.valor) continue;
+        const candidata = entradaDoCatalogo(catalogo, valor.tipo, valor.valor, esperado, valor.origem);
+        if (candidata) candidatas.push({ tipo: valor.tipo, item: candidata });
+      }
     }
 
     const validacoes = await Promise.all(candidatas.map(async ({ tipo, item }) => ({
@@ -226,9 +276,9 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
     const fixture = JSON.parse(fs.readFileSync(caminhoFixture, 'utf8')) as { buscas?: Record<string, unknown> };
     for (const [tipo, bruto] of Object.entries(fixture.buscas || {})) {
       if (buscas[tipo]) continue;
-      const candidata = normalizarFixture(tipo, bruto);
+      const candidata = normalizarFixture(catalogo, tipo, bruto);
       if (!candidata) {
-        console.log(`[massa] fixture ignorada por formato invalido: ${tipo}`);
+        console.log(`[massa] fixture ignorada: ${tipo}|motivo=campo-ausente-no-catalogo-ou-formato-invalido`);
         continue;
       }
       try {
