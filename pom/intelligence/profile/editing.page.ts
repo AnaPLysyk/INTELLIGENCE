@@ -12,6 +12,22 @@ type ControlePerfil = {
 export class ProfileEditingPage {
   constructor(private readonly page: Page) {}
 
+  async abrirEdicaoObrigatoria(): Promise<void> {
+    const editar = this.page.getByRole('button', { name: /editar/i }).first();
+
+    await expect(
+      editar,
+      'Com edit_person e org_ALL válidos, a tela de pessoa deve disponibilizar o botão Editar.',
+    ).toBeVisible({ timeout: 15_000 });
+
+    await expect(
+      editar,
+      'O botão Editar da pessoa deve estar habilitado para o usuário autorizado.',
+    ).toBeEnabled();
+
+    await editar.click();
+  }
+
   private async controlesVisiveis(): Promise<ControlePerfil[]> {
     return this.page
       .locator('input:visible, textarea:visible, select:visible')
