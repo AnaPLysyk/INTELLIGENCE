@@ -36,20 +36,28 @@ registrarCaso('INT-100-I3', async (world) => {
   const page = await world.intelligence();
   const pguid = crypto.randomUUID().toUpperCase();
   await page.autenticarComCredenciais(await world.credenciaisViewOnly());
+
   const rawPage = await world.pagina();
-  const resposta = rawPage.waitForResponse(
+  const respostaPromise = rawPage.waitForResponse(
     (response) => response.request().method() === 'GET'
       && response.url().includes(`/service/profile/person/${pguid}`),
     { timeout: 30_000 },
   );
+
   await page.abrirDetalhesDoPerfilPorPguid(pguid);
-  await resposta;
-  await expect.soft(
-    rawPage.getByText(/a busca n[aã]o est[aá] dispon[ií]vel para o seu usu[aá]rio/i).first(),
-  ).toBeVisible({ timeout: 10_000 });
-  await expect.soft(
+  const resposta = await respostaPromise;
+
+  expect(
+    resposta.status(),
+    'Consultar PGUID inexistente em modo view-only não deve provocar erro interno do servidor.',
+  ).toBeLessThan(500);
+
+  await expect(
     rawPage.getByText(/perfil.*n[aã]o encontrado|n[aã]o encontrado|nenhum resultado encontrado|not found/i).first(),
-  ).toBeVisible({ timeout: 10_000 });
+    'A UI deve indicar que o perfil solicitado não foi encontrado.',
+  ).toBeVisible({ timeout: 15_000 });
+
+  await page.validarBuscaIndisponivel();
 });
 
 registrarCaso('INT-24-UI-01', async (world) => {
