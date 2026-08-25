@@ -15,7 +15,7 @@ export type EntradaMassaBusca = {
   seletor: string;
   valor: string;
   kind?: string;
-  origem: 'SMART.Process' | 'SMART API' | 'GBDS API' | 'INTELLIGENCE API' | 'FIXTURE_VALIDADA';
+  origem: 'SMART.Process' | 'SMART API' | 'GBDS API' | 'INTELLIGENCE API';
   esperado: IdentidadeEsperada;
 };
 
@@ -25,6 +25,7 @@ export type ArquivoMassaBusca = {
   fonte:
     | 'SMART_API_E_BD_SOMENTE_LEITURA'
     | 'SMART_API_BD_E_GBDS_SOMENTE_LEITURA'
+    | 'SMART_API_BD_GBDS_INTELLIGENCE_SOMENTE_LEITURA'
     | 'SMART_API_BD_GBDS_E_FIXTURE_VALIDADA';
   buscas: Record<string, EntradaMassaBusca>;
   tiposAusentes: string[];
@@ -46,6 +47,7 @@ export function lerMassaBusca(opcional = false): ArquivoMassaBusca | undefined {
   if (massa.schemaVersion !== 1 || ![
     'SMART_API_E_BD_SOMENTE_LEITURA',
     'SMART_API_BD_E_GBDS_SOMENTE_LEITURA',
+    'SMART_API_BD_GBDS_INTELLIGENCE_SOMENTE_LEITURA',
     'SMART_API_BD_GBDS_E_FIXTURE_VALIDADA',
   ].includes(massa.fonte)) {
     throw new Error(`AUTOMATION ERROR: arquivo de massa incompativel: ${arquivo}.`);
