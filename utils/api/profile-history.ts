@@ -1,4 +1,5 @@
-const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/ig;
+const UUID_EXATO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_GLOBAL = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/ig;
 
 function localizarPreviousHistory(valor: unknown, visitados = new Set<object>()): unknown | undefined {
   if (!valor || typeof valor !== 'object') return undefined;
@@ -25,22 +26,44 @@ function localizarPreviousHistory(valor: unknown, visitados = new Set<object>())
   return undefined;
 }
 
-function coletarPguids(valor: unknown, encontrados: Set<string>): void {
-  if (typeof valor === 'string') {
-    const matches = valor.match(UUID) ?? [];
-    for (const match of matches) encontrados.add(match.toUpperCase());
-    UUID.lastIndex = 0;
-    return;
+function adicionarUuids(valor: unknown, encontrados: Set<string>): void {
+  if (typeof valor !== 'string') return;
+  for (const match of valor.match(UUID_GLOBAL) ?? []) {
+    encontrados.add(match.toUpperCase());
   }
+}
 
+function coletarPguidsNomeados(valor: unknown, encontrados: Set<string>): void {
   if (Array.isArray(valor)) {
-    for (const item of valor) coletarPguids(item, encontrados);
+    for (const item of valor) coletarPguidsNomeados(item, encontrados);
     return;
   }
-
   if (!valor || typeof valor !== 'object') return;
-  for (const item of Object.values(valor as Record<string, unknown>)) {
-    coletarPguids(item, encontrados);
+
+  for (const [chave, item] of Object.entries(valor as Record<string, unknown>)) {
+    const chaveNormalizada = chave.replace(/[^a-z0-9]/gi, '').toLowerCase();
+    if (chaveNormalizada.includes('pguid') || chaveNormalizada === 'profileguid') {
+      adicionarUuids(item, encontrados);
+    }
+    if (UUID_EXATO.test(chave)) encontrados.add(chave.toUpperCase());
+    coletarPguidsNomeados(item, encontrados);
+  }
+}
+
+function coletarUuidsFallback(valor: unknown, encontrados: Set<string>): void {
+  if (typeof valor === 'string') {
+    adicionarUuids(valor, encontrados);
+    return;
+  }
+  if (Array.isArray(valor)) {
+    for (const item of valor) coletarUuidsFallback(item, encontrados);
+    return;
+  }
+  if (!valor || typeof valor !== 'object') return;
+
+  for (const [chave, item] of Object.entries(valor as Record<string, unknown>)) {
+    if (UUID_EXATO.test(chave)) encontrados.add(chave.toUpperCase());
+    coletarUuidsFallback(item, encontrados);
   }
 }
 
@@ -48,7 +71,13 @@ export function extrairPguidsPreviousHistory(body: unknown): string[] {
   const previousHistory = localizarPreviousHistory(body);
   if (previousHistory === undefined || previousHistory === null) return [];
 
-  const encontrados = new Set<string>();
-  coletarPguids(previousHistory, encontrados);
-  return [...encontrados];
+  const pguidsNomeados = new Set<string>();
+  coletarPguidsNomeados(previousHistory, pguidsNomeados);
+  if (pguidsNomeados.size > 0) return [...pguidsNomeados];
+
+  // Compatibilidade defensiva com versões antigas em que previousHistory
+  // não identifica explicitamente o campo PGUID no JSON.
+  const fallback = new Set<string>();
+  coletarUuidsFallback(previousHistory, fallback);
+  return [...fallback];
 }
