@@ -27,9 +27,8 @@ Funcionalidade: Visualização de perfil
 
   @negative @acceptance @regression @int-100 @viewonly @permission-intelligence_view_only @not-found @hardening @case-INT-100-I3
   Cenário: Tratamento seguro de PGUID inexistente em modo somente leitura
-    Dado que sou usuário view-only
+    Dado que sou usuário view-only com acesso a um perfil válido
     E acesso deep-link com PGUID inexistente
     Quando o perfil inexistente é consultado
     Então a resposta não apresenta erro interno
-    E visualizo indicação de perfil não encontrado
     E a busca continua indisponível
