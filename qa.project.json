@@ -12,7 +12,8 @@
     "porTicket": "node scripts/run-by-ticket.cjs",
     "test100Admin": "npm run test:int100:admin",
     "test100ViewOnly": "npm run test:int100:viewonly",
-    "test100NoAccess": "npm run test:int100:noaccess"
+    "test100NoAccess": "npm run test:int100:noaccess",
+    "testEditing": "npm run test:editing"
   },
   "plan": "automation.plan.json",
   "runtime": { "preferred": "host", "fallback": "host" },
@@ -86,6 +87,29 @@
         "INT_100_SEM_PERMISSAO_USERNAME": ["GBDS_USERNAME"],
         "INT_100_SEM_PERMISSAO_PASSWORD": ["GBDS_PASSWORD"],
         "INTELLIGENCE_REUTILIZAR_MASSA": { "value": "true" }
+      },
+      "restoreBaselineIfPresent": true
+    },
+    "intelligenceEditor": {
+      "mode": "delta",
+      "role": "administrator",
+      "ensure": [
+        "intelligence_user",
+        "intelligence_list_regular",
+        "edit_transaction",
+        "edit_person",
+        "org_ALL"
+      ],
+      "remove": ["intelligence_view_only"],
+      "ssh": {
+        "host": "172.16.1.146",
+        "user": "anapaula.external",
+        "identity": "C:\\Users\\Testing Company\\.ssh\\id_ed25519_automacao_smart",
+        "sudo": true
+      },
+      "executionEnv": {
+        "INTELLIGENCE_ADMIN_USERNAME": ["GBDS_USERNAME"],
+        "INTELLIGENCE_ADMIN_PASSWORD": ["GBDS_PASSWORD"]
       },
       "restoreBaselineIfPresent": true
     }
