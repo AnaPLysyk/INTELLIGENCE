@@ -1,0 +1,357 @@
+PREFLIGHT|project=intelligence|vpn=CONNECTED|tcp=0
+ROUTE|project=intelligence|root=C:\Users\Testing Company\projetos-github\INTELLIGENCE|capability=regression|runner=host
+
+> intelligence-automacao@1.0.0 test:regression
+> node orchestrator.cjs regression
+
+[orchestrator] project=INTELLIGENCE suite=regression release=5.5.0.5062 tags=@regression tests=54
+[orchestrator] cucumber-run mode=execute status=START
+(node:2252) ExperimentalWarning: glob is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[massa] fixture nao encontrada em: C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\test-data\fixtures\busca-massa-adicional.json
+
+Failed scenarios:
+  1) Busca por ID externo retorna resultados # features\intelligence\api\busca\perfis.feature:9
+       Quando executo busca por ID externo # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: BLOQUEADO: nao existe massa pesquisavel para EXTERNAL.ID.
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:39:19)
+               at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-POS-EXTERNAL-01",
+             "objetivo": "API-POS-EXTERNAL-01"
+           }
+  2) Busca por data de nascimento retorna resultados # features\intelligence\api\busca\perfis.feature:16
+       Quando executo busca por data de nascimento # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: BLOQUEADO: nao existe massa pesquisavel para birthdate.
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:39:19)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-POS-BIRTHDATE-01",
+             "objetivo": "API-POS-BIRTHDATE-01"
+           }
+  3) Busca por nome retorna perfis correspondentes # features\intelligence\api\busca\perfis.feature:30
+       Quando executo busca por nome # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: BLOQUEADO: nao existe massa pesquisavel para name.
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:39:19)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-POS-NAME-01",
+             "objetivo": "API-POS-NAME-01"
+           }
+  4) Busca por CIB retorna perfis correspondentes # features\intelligence\api\busca\perfis.feature:37
+       Quando executo busca por CIB # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: BLOQUEADO: nao existe massa pesquisavel para cib.
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:39:19)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-POS-CIB-01",
+             "objetivo": "API-POS-CIB-01"
+           }
+  5) Payload sem nome do campo não expõe resultados # features\intelligence\api\busca\perfis.feature:70
+       Quando submeto a busca # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: expect(received).toBe(expected) // Object.is equality
+           
+           Expected: 0
+           Received: 1
+               at captureRawStack (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright-core\lib\coreBundle.js:3130:17)
+               at callMatcherAsStep (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12873:57)
+               at Object.toBe (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12863:23)
+               at semExposicao (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:30:87)
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:100:9)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-NEG-PAYLOAD-NAME-01",
+             "objetivo": "API-NEG-PAYLOAD-NAME-01"
+           }
+  6) Payload com valor vazio não expõe resultados # features\intelligence\api\busca\perfis.feature:77
+       Quando submeto a busca # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: count nao deve provocar erro interno.
+           
+           expect(received).toBeLessThan(expected)
+           
+           Expected: < 500
+           Received:   500
+               at captureRawStack (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright-core\lib\coreBundle.js:3130:17)
+               at callMatcherAsStep (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12873:57)
+               at Object.toBeLessThan (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12863:23)
+               at semErroInterno (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:24:79)
+               at semExposicao (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:27:5)
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:100:9)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-NEG-PAYLOAD-VALUE-01",
+             "objetivo": "API-NEG-PAYLOAD-VALUE-01"
+           }
+  7) Bloqueio de injeção SQL em busca # features\intelligence\api\busca\perfis.feature:91
+       Quando submeto a busca # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           TypeError: fetch failed
+               at node:internal/deps/undici/undici:13502:13
+               at async postarBusca (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\api\intelligence.js:115:22)
+               at async buscarPerfisIntelligenceComPayloadLivre (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\api\intelligence.js:150:19)
+               at async Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:112:22)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+           Caused by: Error: read ECONNRESET
+               at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+               at TCP.callbackTrampoline (node:internal/async_hooks:130:17)
+
+           {
+             "id": "API-DES-SQLI-01",
+             "objetivo": "API-DES-SQLI-01"
+           }
+  8) Entrada XSS em busca não executa nem expõe resultados # features\intelligence\api\busca\perfis.feature:98
+       Quando submeto a busca # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: count nao deve provocar erro interno.
+           
+           expect(received).toBeLessThan(expected)
+           
+           Expected: < 500
+           Received:   500
+               at captureRawStack (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright-core\lib\coreBundle.js:3130:17)
+               at callMatcherAsStep (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12873:57)
+               at Object.toBeLessThan (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12863:23)
+               at semErroInterno (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:24:79)
+               at semExposicao (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:27:5)
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:112:9)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-DES-XSS-01",
+             "objetivo": "API-DES-XSS-01"
+           }
+  9) Path traversal em busca não expõe resultados # features\intelligence\api\busca\perfis.feature:105
+       Quando submeto a busca # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: count nao deve provocar erro interno.
+           
+           expect(received).toBeLessThan(expected)
+           
+           Expected: < 500
+           Received:   500
+               at captureRawStack (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright-core\lib\coreBundle.js:3130:17)
+               at callMatcherAsStep (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12873:57)
+               at Object.toBeLessThan (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12863:23)
+               at semErroInterno (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:24:79)
+               at semExposicao (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:27:5)
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:112:9)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-DES-PATH-01",
+             "objetivo": "API-DES-PATH-01"
+           }
+  10) Valor excessivamente grande não provoca erro interno # features\intelligence\api\busca\perfis.feature:112
+       Quando submeto a busca # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: count nao deve provocar erro interno.
+           
+           expect(received).toBeLessThan(expected)
+           
+           Expected: < 500
+           Received:   500
+               at captureRawStack (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright-core\lib\coreBundle.js:3130:17)
+               at callMatcherAsStep (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12873:57)
+               at Object.toBeLessThan (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12863:23)
+               at semErroInterno (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:24:79)
+               at semExposicao (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:27:5)
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\buscar\perfis.steps.js:112:9)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-DES-OVERSIZE-01",
+             "objetivo": "API-DES-OVERSIZE-01"
+           }
+  11) Consulta de perfil com sucesso em modo view-only # features\intelligence\api\perfis\consulta.feature:9
+       Quando consulto o perfil pela API # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: O backend deve carregar o perfil solicitado para o usuario view-only.
+           
+           expect(received).toBe(expected) // Object.is equality
+           
+           Expected: 200
+           Received: 500
+               at captureRawStack (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright-core\lib\coreBundle.js:3130:17)
+               at callMatcherAsStep (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12873:57)
+               at Object.toBe (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12863:23)
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\consultar\perfis.steps.js:15:125)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-POS-PROFILE-VIEWONLY-01",
+             "objetivo": "API-POS-PROFILE-VIEWONLY-01"
+           }
+  12) Retorno de erro para PGUID inexistente no sistema # features\intelligence\api\perfis\consulta.feature:17
+       Quando consulto o perfil pela API # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: profile/person nao deve provocar erro interno para PGUID inexistente.
+           
+           expect(received).toBeLessThan(expected)
+           
+           Expected: < 500
+           Received:   500
+               at captureRawStack (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright-core\lib\coreBundle.js:3130:17)
+               at callMatcherAsStep (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12873:57)
+               at Object.toBeLessThan (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12863:23)
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\api\consultar\perfis.steps.js:22:125)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "API-NEG-PROFILE-NOTFOUND-01",
+             "objetivo": "API-NEG-PROFILE-NOTFOUND-01"
+           }
+  13) Navegação entre perfis no histórico de visualizações # features\intelligence\ui\perfis\consulta.feature:15
+       Quando seleciono um perfil anterior # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: O historico deve exibir o PGUID anterior esperado.
+           
+           expect(locator).toContainText(expected) failed
+           
+           Locator: locator('body')
+           Expected substring: "A5EF5E92-F807-4FD3-A56E-11BD630818D6"
+           Received string:    "APerfilFace frontalPGUID27ACBE3F-4B9A-4142-9366-E83A609DA5D4ChavesNenhum dado cadastradoDados biográficosnomeTESTE PRIMEIRA VIA MTEGNOXdata de nascimento15/01/2012sexoFestado civilSolteiro(a)Estado de origemSCocupaçãoAssistente administrativonacionalidadeBRAnaturalidadeFlorianópolisendereçoRUA DAS HORTENSIASnúmero184cep88058455bairroCENTROcidade de residênciaFlorianópolisUF de residênciaSCpaís de residênciaBrasilfiliação 1MARIA TESTE PRIMEIRA VIA MTEGNOXfiliação 2JOSE TESTE PRIMEIRA VIA MTEGNOXChaves externasprocessId29410protocol020260028772protocol020260029410processId28772ori_posto cacador - centroorg_ALLori_civilori_griauleTGUID8F6CF0CA-79F0-4C1F-9C35-32953D74BEADHistórico de transaçõesprocessId 29410, protocol 020260028772, protocol 020260029410, processId 2877224/08/2026 12:38:36Histórico de perfis anterioresE67AD250-9A0A-44D6-B73D-64F63BCB289811/08/2026 17:27:1549999A60-F57B-4B8F-B091-E71B3D408FDD24/08/2026 12:37:59DigitaisPalmaresImagensÍrisesAssinaturaImagens originaisEscolha uma biometria.Voltar"
+           Timeout: 30000ms
+           
+           Call log:
+             - Expect "to.have.text" with timeout 30000ms
+             - waiting for locator('body')
+               61 × locator resolved to <body>…</body>
+                  - unexpected value "APerfilFace frontalPGUID27ACBE3F-4B9A-4142-9366-E83A609DA5D4ChavesNenhum dado cadastradoDados biográficosnomeTESTE PRIMEIRA VIA MTEGNOXdata de nascimento15/01/2012sexoFestado civilSolteiro(a)Estado de origemSCocupaçãoAssistente administrativonacionalidadeBRAnaturalidadeFlorianópolisendereçoRUA DAS HORTENSIASnúmero184cep88058455bairroCENTROcidade de residênciaFlorianópolisUF de residênciaSCpaís de residênciaBrasilfiliação 1MARIA TESTE PRIMEIRA VIA MTEGNOXfiliação 2JOSE TESTE PRIMEIRA VIA MTEGNOXChaves externasprocessId29410protocol020260028772protocol020260029410processId28772ori_posto cacador - centroorg_ALLori_civilori_griauleTGUID8F6CF0CA-79F0-4C1F-9C35-32953D74BEADHistórico de transaçõesprocessId 29410, protocol 020260028772, protocol 020260029410, processId 2877224/08/2026 12:38:36Histórico de perfis anterioresE67AD250-9A0A-44D6-B73D-64F63BCB289811/08/2026 17:27:1549999A60-F57B-4B8F-B091-E71B3D408FDD24/08/2026 12:37:59DigitaisPalmaresImagensÍrisesAssinaturaImagens originaisEscolha uma biometria.Voltar"
+           
+               at captureRawStack (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright-core\lib\coreBundle.js:3130:17)
+               at callMatcherAsStep (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12873:57)
+               at Object.toContainText (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12863:23)
+               at IntelligencePage.validarHistoricoDePerfisAnteriores (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\pom\intelligence\core\intelligence.page.js:437:95)
+               at async Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\ui\perfis\consulta.steps.js:42:5)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "INT-24-UI-01",
+             "objetivo": "INT-24-UI-01"
+           }
+  14) Tratamento de erro para PGUID não encontrado # features\intelligence\ui\perfis\consulta.feature:29
+       Quando a página tenta carregar # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: expect(locator).toBeVisible() failed
+           
+           Locator: getByText(/a busca n[aã]o est[aá] dispon[ií]vel para o seu usu[aá]rio/i).first()
+           Expected: visible
+           Timeout: 10000ms
+           Error: element(s) not found
+           
+           Call log:
+             - Expect "to.be.visible" with timeout 10000ms
+             - waiting for getByText(/a busca n[aã]o est[aá] dispon[ií]vel para o seu usu[aá]rio/i).first()
+           
+               at captureRawStack (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright-core\lib\coreBundle.js:3130:17)
+               at callMatcherAsStep (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12873:57)
+               at Object.toBeVisible (C:\Users\Testing Company\projetos-github\INTELLIGENCE\node_modules\playwright\lib\matchers\expect.js:12863:23)
+               at Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\ui\perfis\consulta.steps.js:35:120)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "INT-100-I3",
+             "objetivo": "INT-100-I3"
+           }
+  15) Campo de data permanece preenchido ao abrir a edição do perfil # features\intelligence\ui\perfis\edicao.feature:9
+       Quando abro a edição do perfil # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: BLOQUEADO: o botao Editar nao aparece. URL=http://172.16.1.146:8122/gbs-intelligence-server/react/person/27ACBE3F-4B9A-4142-9366-E83A609DA5D4. Botoes encontrados: , , , A, Voltar
+               at IntelligencePage.abrirEdicaoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\pom\intelligence\core\intelligence.page.js:400:19)
+               at async Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\ui\perfis\edicao.steps.js:10:5)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "INT-40-UI-02",
+             "objetivo": "INT-40-UI-02"
+           }
+  16) Salvamento de campos biográficos editáveis # features\intelligence\ui\transacoes\edicao.feature:9
+       Quando edito campos biográficos # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: BLOQUEADO: o botao Editar nao aparece. URL=http://172.16.1.146:8122/gbs-intelligence-server/react/transaction/49999A60-F57B-4B8F-B091-E71B3D408FDD. Botoes encontrados: , , , A, , nomeTESTE PRIMEIRA VIA MTEGNOX, data de nascimento15/01/2012, sexoF, estado civilSolteiro(a), Estado de origemSC, ocupaçãoAssistente administrativo, nacionalidadeBRA, naturalidadeFlorianópolis, endereçoRUA DAS HORTENSIAS, número184, cep88058455, bairroCENTRO, cidade de residênciaFlorianópolis, UF de residênciaSC, país de residênciaBrasil, filiação 1MARIA TESTE PRIMEIRA VIA MTEGNOX, filiação 2JOSE TESTE PRIMEIRA VIA MTEGNOX, protocol020260029410, processId29410, 49999A60-F57B-4B8F-B091-E71B3D408FDD, Voltar
+               at IntelligencePage.abrirEdicaoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\pom\intelligence\core\intelligence.page.js:400:19)
+               at async Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\ui\transacoes\edicao.steps.js:24:5)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "INT-31-UI-01",
+             "objetivo": "INT-31-UI-01"
+           }
+  17) Persistência de datas após edição # features\intelligence\ui\transacoes\edicao.feature:16
+       Quando edito a data # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: BLOQUEADO: o botao Editar nao aparece. URL=http://172.16.1.146:8122/gbs-intelligence-server/react/transaction/49999A60-F57B-4B8F-B091-E71B3D408FDD. Botoes encontrados: , , , A, , nomeTESTE PRIMEIRA VIA MTEGNOX, data de nascimento15/01/2012, sexoF, estado civilSolteiro(a), Estado de origemSC, ocupaçãoAssistente administrativo, nacionalidadeBRA, naturalidadeFlorianópolis, endereçoRUA DAS HORTENSIAS, número184, cep88058455, bairroCENTRO, cidade de residênciaFlorianópolis, UF de residênciaSC, país de residênciaBrasil, filiação 1MARIA TESTE PRIMEIRA VIA MTEGNOX, filiação 2JOSE TESTE PRIMEIRA VIA MTEGNOX, protocol020260029410, processId29410, 49999A60-F57B-4B8F-B091-E71B3D408FDD, Voltar
+               at IntelligencePage.abrirEdicaoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\pom\intelligence\core\intelligence.page.js:400:19)
+               at async Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\ui\transacoes\edicao.steps.js:35:5)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "INT-40-UI-01",
+             "objetivo": "INT-40-UI-01"
+           }
+  18) Seleção de data via picker de calendário # features\intelligence\ui\transacoes\edicao.feature:23
+       Quando clico no campo para abrir picker # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           Error: BLOQUEADO: o botao Editar nao aparece. URL=http://172.16.1.146:8122/gbs-intelligence-server/react/transaction/49999A60-F57B-4B8F-B091-E71B3D408FDD. Botoes encontrados: , , , A, , nomeTESTE PRIMEIRA VIA MTEGNOX, data de nascimento15/01/2012, sexoF, estado civilSolteiro(a), Estado de origemSC, ocupaçãoAssistente administrativo, nacionalidadeBRA, naturalidadeFlorianópolis, endereçoRUA DAS HORTENSIAS, número184, cep88058455, bairroCENTRO, cidade de residênciaFlorianópolis, UF de residênciaSC, país de residênciaBrasil, filiação 1MARIA TESTE PRIMEIRA VIA MTEGNOX, filiação 2JOSE TESTE PRIMEIRA VIA MTEGNOX, protocol020260029410, processId29410, 49999A60-F57B-4B8F-B091-E71B3D408FDD, Voltar
+               at IntelligencePage.abrirEdicaoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\pom\intelligence\core\intelligence.page.js:400:19)
+               at async Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\ui\transacoes\edicao.steps.js:44:5)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "INT-32-UI-01",
+             "objetivo": "INT-32-UI-01"
+           }
+  19) Exportação de transação em formato NIST com download # features\intelligence\ui\transacoes\exportacao.feature:9
+       Quando clico em exportar para NIST # .cucumber-dist\steps\intelligence\common\case.steps.js:93
+           page.waitForEvent: Timeout 30000ms exceeded while waiting for event "download"
+           =========================== logs ===========================
+           waiting for event "download"
+           ============================================================
+               at IntelligencePage.exportarNistDaTelaAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\pom\intelligence\core\intelligence.page.js:444:43)
+               at async Object.executar (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\ui\transacoes\exportacao.steps.js:13:22)
+               at async executarCaso (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\utils\common\case-registry.js:32:5)
+               at async executarCasoAtual (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:25:5)
+               at async IntelligenceWorld.<anonymous> (C:\Users\Testing Company\projetos-github\INTELLIGENCE\.cucumber-dist\steps\intelligence\common\case.steps.js:99:17)
+
+           {
+             "id": "INT-30-UI-01",
+             "objetivo": "INT-30-UI-01"
+           }
+
+1 hook (1 passed)
+54 scenarios (35 passed, 19 failed)
+306 steps (267 passed, 20 skipped, 19 failed)
+4m 37.714s (4m 36.325s executing your code)
+[orchestrator] cucumber-run mode=execute status=END exitCode=1 signal=-
+[qa-result] status=FAIL classification=FUNCTIONAL_OR_AUTOMATION_FAILURE total=54 passed=35 blocked=8 failed=11
