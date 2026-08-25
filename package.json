@@ -23,6 +23,7 @@
     "test:int100:admin": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@acceptance and @int-100 and @admin\"",
     "test:int100:viewonly": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@acceptance and @int-100 and @viewonly\"",
     "test:int100:noaccess": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@acceptance and @int-100 and @no-access\"",
+    "test:editing": "npm run build:cucumber && cucumber-js --config cucumber.cjs --tags \"@regression and @editing\"",
     "test:feature": "node scripts/run-cucumber-target.cjs feature",
     "test:steps": "node scripts/run-cucumber-target.cjs steps",
     "test:case": "node scripts/run-cucumber-target.cjs case",
