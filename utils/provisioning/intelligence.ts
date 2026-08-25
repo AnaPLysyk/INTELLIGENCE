@@ -176,12 +176,17 @@ export async function gerarMassaDeBuscaComDadosDoSmart(request: APIRequestContex
     if (tiposAlvo.every((tipo) => buscas[tipo])) break;
   }
 
-  const caminhoFixture = path.resolve(__dirname, '../test-data/fixtures/busca-massa-adicional.json');
+  const caminhoFixture = path.resolve(__dirname, '../../test-data/fixtures/busca-massa-adicional.json');
   if (fs.existsSync(caminhoFixture)) {
     const fixture = JSON.parse(fs.readFileSync(caminhoFixture, 'utf8'));
     for (const [tipo, item] of Object.entries(fixture.buscas || {})) {
-      if (!buscas[tipo]) buscas[tipo] = item as EntradaMassaBusca;
+      if (!buscas[tipo]) {
+        console.log(`[massa] carregando fixture: ${tipo}`);
+        buscas[tipo] = item as EntradaMassaBusca;
+      }
     }
+  } else {
+    console.log(`[massa] fixture nao encontrada em: ${caminhoFixture}`);
   }
 
   const tiposAusentes = tiposAlvo.filter((tipo) => !buscas[tipo]);
