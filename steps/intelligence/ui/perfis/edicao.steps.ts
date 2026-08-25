@@ -43,6 +43,8 @@ registrarCaso('INT-40-UI-02', async (world) => {
 
   const page = await autenticarAdmin(world);
   await page.abrirDetalhesDoPerfilPorPguid(pguid);
-  await page.abrirEdicaoAtual();
-  await new ProfileEditingPage(await world.pagina()).validarAlgumCampoDataPreenchido();
+
+  const edicao = new ProfileEditingPage(await world.pagina());
+  await edicao.abrirEdicaoObrigatoria();
+  await edicao.validarAlgumCampoDataPreenchido();
 });
