@@ -52,10 +52,13 @@ registrarCaso('INT-100-I3', async (world) => {
   console.log(
     `INT100_VIEWONLY_CONTROL|pguid=${pguidValido}|http=${respostaValida.status()}|url=${respostaValida.url()}`,
   );
-  expect(
-    respostaValida.status(),
-    'A mesma sessão view-only deve conseguir consultar um PGUID válido antes do hardening de not-found.',
-  ).toBe(200);
+  if (respostaValida.status() !== 200) {
+    throw new Error(
+      `BLOQUEADO: a execução atual não possui a pré-condição view-only válida do INT-100; `
+      + `o PGUID de controle retornou HTTP ${respostaValida.status()}. `
+      + 'Execute o cenário dentro do perfil Ranger int100ViewOnly antes de classificar o hardening de not-found.',
+    );
+  }
 
   const respostaInexistentePromise = rawPage.waitForResponse(
     (response) => response.request().method() === 'GET'
