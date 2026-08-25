@@ -727,7 +727,11 @@ export class IntelligencePage {
       if (!temConteudo) {
         throw new Error('BLOQUEADO: a pagina de perfil nao foi carregada (sem conteudo).');
       }
-      throw new Error('BLOQUEADO: o botao Editar nao aparece. Pode ser problema de permissao ou a UI nao renderizou o botao.');
+      const todosOsBotoes = await this.page.getByRole('button').allTextContents();
+      const url = this.page.url();
+      throw new Error(
+        `BLOQUEADO: o botao Editar nao aparece. URL=${url}. Botoes encontrados: ${todosOsBotoes.join(', ') || 'nenhum'}`
+      );
     }
 
     await editar.click();
