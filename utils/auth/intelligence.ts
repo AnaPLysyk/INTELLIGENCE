@@ -27,7 +27,13 @@ function candidatos(): Candidato[] {
     candidato('SMART_TRUST_READONLY', 'SMART_TRUST_READONLY_USERNAME', 'SMART_TRUST_READONLY_PASSWORD'),
     candidato('GBDS', 'GBDS_USERNAME', 'GBDS_PASSWORD'),
   ].filter((item): item is Candidato => Boolean(item));
-  return [...new Map(lista.map((item) => [item.usuario, item])).values()];
+
+  const usuariosVistos = new Set<string>();
+  return lista.filter((item) => {
+    if (usuariosVistos.has(item.usuario)) return false;
+    usuariosVistos.add(item.usuario);
+    return true;
+  });
 }
 
 function extrairClaims(token: string): Set<string> {
