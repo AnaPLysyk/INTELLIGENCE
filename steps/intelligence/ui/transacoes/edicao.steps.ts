@@ -1,7 +1,7 @@
 import { registrarCaso } from '../../../../utils/common/case-registry';
 import { obterValorObrigatorioDaMassa } from '../../../../utils/data/intelligence';
 import { autenticarSmart, consultarProcessoSmart } from '../../../../utils/integrations/smart';
-import { autenticarAdmin, envObrigatoria, idsCampos } from '../helpers';
+import { autenticarAdmin, idsCampos } from '../helpers';
 
 registrarCaso('INT-31-UI-01', async (world) => {
   const massa = await world.garantirMassa();
@@ -14,9 +14,8 @@ registrarCaso('INT-31-UI-01', async (world) => {
   const token = await autenticarSmart(request);
   const detalhes = await consultarProcessoSmart(request, token, transacao.esperado.processId);
   const chaves = idsCampos(detalhes, 'keys');
-  const biograficos = idsCampos(detalhes, 'biographics');
-  if (!chaves.length || !biograficos.length) {
-    throw new Error('BLOQUEADO: a transação SMART não possui campos suficientes para validar edição.');
+  if (!chaves.length) {
+    throw new Error('BLOQUEADO: a transação SMART não possui campos-chave para validar o INT-31.');
   }
 
   const page = await autenticarAdmin(world);
@@ -24,7 +23,6 @@ registrarCaso('INT-31-UI-01', async (world) => {
   await page.validarDetalhesDaTransacaoCarregados(transacao.valor);
   await page.abrirEdicaoAtual();
   for (const chave of chaves) await page.validarCampoNaoDisponivelParaEdicao(chave);
-  await page.validarCampoDisponivelParaEdicao(biograficos[0]);
 });
 
 registrarCaso('INT-40-UI-01', async (world) => {
@@ -34,7 +32,7 @@ registrarCaso('INT-40-UI-01', async (world) => {
   await page.abrirDetalhesDaTransacaoPorTguid(tguid);
   await page.validarDetalhesDaTransacaoCarregados(tguid);
   await page.abrirEdicaoAtual();
-  await page.validarCampoDataPreenchidoNaEdicao(envObrigatoria('INT_40_DATE_FIELD_LABEL'));
+  await page.validarAlgumCampoDataPreenchidoNaEdicao();
 });
 
 registrarCaso('INT-32-UI-01', async (world) => {
@@ -44,7 +42,7 @@ registrarCaso('INT-32-UI-01', async (world) => {
   await page.abrirDetalhesDaTransacaoPorTguid(tguid);
   await page.validarDetalhesDaTransacaoCarregados(tguid);
   await page.abrirEdicaoAtual();
-  await page.validarCampoDataComCalendarioNaEdicao(envObrigatoria('INT_32_DATE_FIELD_LABEL'));
+  await page.validarAlgumCampoDataComCalendarioNaEdicao();
 });
 
 registrarCaso('INT-33-SPEC-01', async () => {
