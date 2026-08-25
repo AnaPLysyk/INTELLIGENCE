@@ -46,10 +46,17 @@ registrarCaso('INT-100-I3', async (world) => {
 
   await page.abrirDetalhesDoPerfilPorPguid(pguid);
   const resposta = await respostaPromise;
+  const corpoResposta = await resposta.text().catch(() => '');
+  const corpoDiagnostico = corpoResposta.replace(/\s+/g, ' ').trim().slice(0, 1200);
+
+  console.log(
+    `INT100_NOTFOUND_RESPONSE|http=${resposta.status()}|url=${resposta.url()}|body=${JSON.stringify(corpoDiagnostico)}`,
+  );
 
   expect(
     resposta.status(),
-    'Consultar PGUID inexistente em modo view-only não deve provocar erro interno do servidor.',
+    `Consultar PGUID inexistente em modo view-only não deve provocar erro interno do servidor. `
+      + `HTTP=${resposta.status()} body=${corpoDiagnostico || '<vazio>'}`,
   ).toBeLessThan(500);
 
   await expect(
