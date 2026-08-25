@@ -1,3 +1,4 @@
+import { TransactionEditingPage } from '../../../../pom/intelligence/transaction/editing.page';
 import { registrarCaso } from '../../../../utils/common/case-registry';
 import { obterValorObrigatorioDaMassa } from '../../../../utils/data/intelligence';
 import { autenticarSmart, consultarProcessoSmart } from '../../../../utils/integrations/smart';
@@ -32,7 +33,7 @@ registrarCaso('INT-40-UI-01', async (world) => {
   await page.abrirDetalhesDaTransacaoPorTguid(tguid);
   await page.validarDetalhesDaTransacaoCarregados(tguid);
   await page.abrirEdicaoAtual();
-  await page.validarAlgumCampoDataPreenchidoNaEdicao();
+  await new TransactionEditingPage(await world.pagina()).validarAlgumCampoDataPreenchido();
 });
 
 registrarCaso('INT-32-UI-01', async (world) => {
@@ -42,7 +43,7 @@ registrarCaso('INT-32-UI-01', async (world) => {
   await page.abrirDetalhesDaTransacaoPorTguid(tguid);
   await page.validarDetalhesDaTransacaoCarregados(tguid);
   await page.abrirEdicaoAtual();
-  await page.validarAlgumCampoDataComCalendarioNaEdicao();
+  await new TransactionEditingPage(await world.pagina()).validarAlgumCampoDataComCalendario();
 });
 
 registrarCaso('INT-33-SPEC-01', async () => {
