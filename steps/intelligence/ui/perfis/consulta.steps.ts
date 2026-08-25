@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 
 import { registrarCaso } from '../../../../utils/common/case-registry';
 import { obterValorObrigatorioDaMassa } from '../../../../utils/data/intelligence';
-import { autenticarAdmin, envObrigatoria } from '../helpers';
+import { autenticarAdmin } from '../helpers';
 
 registrarCaso('INT-17-PGUID-UI', async (world) => {
   const massa = await world.garantirMassa();
@@ -49,8 +49,8 @@ registrarCaso('INT-100-I3', async (world) => {
 registrarCaso('INT-24-UI-01', async (world) => {
   await world.garantirMassa();
   const page = await autenticarAdmin(world);
-  await page.abrirDetalhesDoPerfilPorPguid(
-    obterValorObrigatorioDaMassa('PGUID', process.env.INT_24_PGUID),
-  );
-  await page.validarHistoricoDePerfisAnteriores(envObrigatoria('INT_24_PREVIOUS_PGUID'));
+  const pguidAtual = obterValorObrigatorioDaMassa('PGUID', process.env.INT_24_PGUID);
+  await page.abrirDetalhesDoPerfilPorPguid(pguidAtual);
+  await page.validarDetalhesDoPerfilCarregados(pguidAtual);
+  await page.navegarParaPerfilAnteriorNoHistorico(pguidAtual);
 });
